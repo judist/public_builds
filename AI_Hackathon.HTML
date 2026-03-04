@@ -1,153 +1,301 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AI Lead Routing Agent — GTM Systems</title>
+<title>AI Lead Routing Agent — BetterUp GTM Systems</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
   :root {
-    --pu: #6B3FA0; --pul: #9B6FC8; --pud: #4A2878;
-    --go: #F5A623; --te: #00B4D8; --gr: #2EC4B6;
-    --bg: #0F0B1A; --bgc: #1A1428; --bgc2: #221C36;
-    --tp: #F0ECF8; --tm: #9988BB; --bo: rgba(107,63,160,0.3);
+    --brand: #ce0058;
+    --brand-dark: #9e0042;
+    --brand-light: #ff4d8f;
+    --brand-pale: #fce8f0;
+    --bg: #ffffff;
+    --bg2: #f7f8fa;
+    --bg3: #f0f1f5;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --shadow: rgba(206,0,88,0.12);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tp); }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+
+  /* ── TEAM STRIP ── */
+  .team-strip {
+    background: var(--text);
+    padding: 16px 56px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 3px solid var(--brand);
+    overflow-x: auto;
+  }
+  .team-strip-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--brand-light);
+    margin-right: 28px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .team-members {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .member {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(206,0,88,0.3);
+    border-radius: 40px;
+    padding: 6px 16px 6px 6px;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .member:hover {
+    background: rgba(206,0,88,0.18);
+    border-color: var(--brand-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(206,0,88,0.25);
+  }
+  .member-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--brand);
+    flex-shrink: 0;
+    background: var(--brand-pale);
+  }
+  .member-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .member-role {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    white-space: nowrap;
+  }
+  .divider { width: 1px; height: 30px; background: rgba(255,255,255,0.1); margin: 0 8px; flex-shrink: 0; }
+
+  /* ── HEADER ── */
   header {
-    background: linear-gradient(135deg, var(--pud) 0%, #1A0A3A 60%, var(--bg) 100%);
-    padding: 44px 56px 32px; border-bottom: 1px solid var(--bo); position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #1a1a2e 0%, #2d1b35 50%, #1a1a2e 100%);
+    padding: 44px 56px 36px;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(206,0,88,0.2);
   }
   header::before {
-    content: ''; position: absolute; width: 600px; height: 600px;
-    background: radial-gradient(circle, rgba(107,63,160,0.22) 0%, transparent 70%);
-    top: -200px; right: -100px; pointer-events: none;
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(206,0,88,0.2) 0%, transparent 70%);
+    top: -150px; right: -80px;
+    pointer-events: none;
   }
-  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--pul); margin-bottom: 10px; }
+  header::after {
+    content: '';
+    position: absolute;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(206,0,88,0.1) 0%, transparent 70%);
+    bottom: -100px; left: 200px;
+    pointer-events: none;
+  }
+  .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--brand-light); margin-bottom: 10px;
+  }
   header h1 {
-    font-size: 38px; font-weight: 800; line-height: 1.1; max-width: 680px; margin-bottom: 12px;
-    background: linear-gradient(90deg, #fff 0%, var(--pul) 100%);
+    font-size: 36px; font-weight: 800; line-height: 1.1;
+    max-width: 680px; margin-bottom: 12px; color: #fff;
+  }
+  header h1 span {
+    background: linear-gradient(90deg, var(--brand-light), var(--brand));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
-  header p { color: var(--tm); font-size: 14px; max-width: 640px; line-height: 1.65; }
+  header p { color: rgba(255,255,255,0.6); font-size: 14px; max-width: 640px; line-height: 1.65; }
   .badges { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
   .badge {
     display: inline-flex; align-items: center; gap: 5px;
-    background: rgba(107,63,160,0.18); border: 1px solid var(--bo);
-    border-radius: 20px; padding: 4px 13px; font-size: 12px; font-weight: 500; color: var(--pul);
+    background: rgba(206,0,88,0.15); border: 1px solid rgba(206,0,88,0.35);
+    border-radius: 20px; padding: 4px 13px; font-size: 12px; font-weight: 500; color: var(--brand-light);
   }
-  .badge.g { background: rgba(245,166,35,0.12); border-color: rgba(245,166,35,0.3); color: var(--go); }
-  .badge.t { background: rgba(0,180,216,0.12); border-color: rgba(0,180,216,0.3); color: var(--te); }
-  main { padding: 36px 56px 56px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .badge.w { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); }
+
+  /* ── MAIN GRID ── */
+  main { padding: 32px 56px 56px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; background: var(--bg2); }
+
+  /* ── CARDS ── */
   .card {
-    background: var(--bgc); border: 1px solid var(--bo); border-radius: 16px; padding: 26px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px;
     position: relative; overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
     animation: fadeUp 0.5s ease both;
   }
-  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(107,63,160,0.35); }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 10px 32px var(--shadow); }
   .card::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    background: linear-gradient(90deg, var(--pu), var(--pul)); border-radius: 16px 16px 0 0;
+    background: linear-gradient(90deg, var(--brand-dark), var(--brand-light));
+    border-radius: 16px 16px 0 0;
   }
-  .card.ag::before { background: linear-gradient(90deg,#1A8A80,var(--gr)); }
-  .card.at::before { background: linear-gradient(90deg,#007A95,var(--te)); }
-  .card.ao::before { background: linear-gradient(90deg,#C77A00,var(--go)); }
+  .card.gray::before { background: linear-gradient(90deg, #9ca3af, #d1d5db); }
+  .card.dark { background: var(--text); color: #fff; border-color: rgba(206,0,88,0.3); }
+  .card.dark p, .card.dark .ss { color: rgba(255,255,255,0.55); }
   .card.s2 { grid-column: span 2; }
   .card.s3 { grid-column: span 3; }
-  .lbl { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--pul); margin-bottom: 8px; }
-  .lbl.g { color: var(--gr); } .lbl.o { color: var(--go); } .lbl.t { color: var(--te); }
-  .sv { font-size: 48px; font-weight: 800; line-height: 1; margin-bottom: 5px;
-    background: linear-gradient(135deg,#fff 30%,var(--pul)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .sv.g { background: linear-gradient(135deg,#B2DFDB,var(--gr)); -webkit-background-clip: text; background-clip: text; }
-  .sv.o { background: linear-gradient(135deg,#FFE082,var(--go)); -webkit-background-clip: text; background-clip: text; }
-  .ss { font-size: 13px; color: var(--tm); }
-  .card h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
-  .card p { font-size: 13px; color: var(--tm); line-height: 1.65; }
-  .tbh { display: flex; background: var(--bgc2); border-radius: 9px; padding: 3px; gap: 3px; margin-bottom: 18px; }
+
+  .lbl { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--brand); margin-bottom: 8px; }
+  .lbl.g { color: #059669; } .lbl.m { color: var(--muted); }
+  .sv { font-size: 48px; font-weight: 800; line-height: 1; margin-bottom: 4px; color: var(--brand); }
+  .sv.dark-v { color: #fff; }
+  .sv.green { color: #059669; }
+  .ss { font-size: 13px; color: var(--muted); }
+  .card h3 { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+  /* ── TOGGLE ── */
+  .tbh { display: flex; background: var(--bg3); border-radius: 9px; padding: 3px; gap: 3px; margin-bottom: 16px; }
   .tb {
     flex: 1; padding: 8px 6px; border: none; border-radius: 6px; background: transparent;
-    color: var(--tm); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter',sans-serif;
+    color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; font-family: 'Inter',sans-serif;
   }
-  .tb.act { background: var(--pu); color: #fff; box-shadow: 0 2px 10px rgba(107,63,160,0.5); }
+  .tb.act { background: var(--brand); color: #fff; box-shadow: 0 2px 10px rgba(206,0,88,0.4); }
   .pn { display: none; } .pn.act { display: block; }
+
+  /* ── IMPACT LIST ── */
   .il { display: flex; flex-direction: column; gap: 9px; margin-top: 12px; }
   .ir { display: flex; align-items: flex-start; gap: 10px; }
   .ii {
-    width: 30px; height: 30px; border-radius: 7px; background: rgba(107,63,160,0.18);
-    border: 1px solid var(--bo); display: flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--brand-pale); border: 1px solid rgba(206,0,88,0.2);
+    display: flex; align-items: center; justify-content: center;
     font-size: 14px; flex-shrink: 0; margin-top: 1px;
   }
-  .it strong { font-size: 13px; display: block; margin-bottom: 1px; }
-  .it span { font-size: 12px; color: var(--tm); line-height: 1.5; }
-  .flow { display: flex; align-items: center; margin-top: 18px; flex-wrap: wrap; gap: 2px; }
+  .it strong { font-size: 13px; display: block; margin-bottom: 1px; color: var(--text); }
+  .it span { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* ── FLOW ── */
+  .flow { display: flex; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 2px; }
   .fs { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 7px; flex: 1; min-width: 70px; }
   .fi {
-    width: 48px; height: 48px; border-radius: 12px; background: var(--bgc2); border: 1px solid var(--bo);
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--brand-pale); border: 1px solid rgba(206,0,88,0.25);
     display: flex; align-items: center; justify-content: center; font-size: 20px;
     transition: all 0.2s; cursor: default;
   }
-  .fs:hover .fi { border-color: var(--pul); background: rgba(107,63,160,0.18); box-shadow: 0 0 16px rgba(107,63,160,0.4); }
-  .fs span { font-size: 11px; color: var(--tm); font-weight: 500; max-width: 72px; line-height: 1.4; }
-  .fa { font-size: 16px; color: var(--pul); opacity: 0.45; flex: 0; position: relative; top: -10px; }
+  .fs:hover .fi { background: var(--brand); box-shadow: 0 0 16px rgba(206,0,88,0.4); transform: scale(1.05); }
+  .fs span { font-size: 11px; color: var(--muted); font-weight: 500; max-width: 72px; line-height: 1.4; }
+  .fa { font-size: 16px; color: var(--brand); opacity: 0.4; flex: 0; position: relative; top: -10px; }
+
+  /* ── CONFIDENCE BARS ── */
   .crw { margin-top: 14px; }
   .cr { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .cl { font-size: 11px; color: var(--tm); width: 120px; flex-shrink: 0; }
-  .cbb { flex: 1; height: 7px; background: var(--bgc2); border-radius: 4px; overflow: hidden; }
-  .cb { height: 100%; border-radius: 4px; background: linear-gradient(90deg,var(--pu),var(--pul)); width: 0; transition: width 1.1s cubic-bezier(0.25,1,0.5,1); }
-  .cb.o { background: linear-gradient(90deg,#C77A00,var(--go)); }
-  .cb.g { background: linear-gradient(90deg,#1A8A80,var(--gr)); }
-  .cs { font-size: 11px; font-weight: 700; width: 32px; text-align: right; }
-  .cc { background: var(--bgc2); border: 1px solid var(--bo); border-radius: 11px; padding: 15px 18px; cursor: pointer; transition: all 0.2s; margin-bottom: 9px; }
-  .cc:hover { border-color: var(--pul); }
-  .cc.op { border-color: var(--pu); }
-  .ct { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; gap: 10px; }
-  .cr2 { font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; white-space: nowrap; }
-  .cr2.c { background: rgba(46,196,182,0.15); color: var(--gr); }
-  .cr2.x { background: rgba(245,166,35,0.15); color: var(--go); }
-  .cd { display: none; margin-top: 10px; font-size: 12px; color: var(--tm); line-height: 1.65; border-top: 1px solid var(--bo); padding-top: 10px; }
+  .cl { font-size: 11px; color: var(--muted); width: 120px; flex-shrink: 0; }
+  .cbb { flex: 1; height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .cb { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--brand-dark), var(--brand-light)); width: 0; transition: width 1.1s cubic-bezier(0.25,1,0.5,1); }
+  .cb.amber { background: linear-gradient(90deg, #b45309, #f59e0b); }
+  .cb.green { background: linear-gradient(90deg, #047857, #34d399); }
+  .cs { font-size: 11px; font-weight: 700; width: 32px; text-align: right; color: var(--text); }
+
+  /* ── CASE STUDY ── */
+  .cc { background: var(--bg2); border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; margin-bottom: 8px; }
+  .cc:hover { border-color: var(--brand-light); box-shadow: 0 4px 16px var(--shadow); }
+  .cc.op { border-color: var(--brand); border-left: 3px solid var(--brand); }
+  .ct { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; gap: 10px; color: var(--text); }
+  .cr2 { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; white-space: nowrap; }
+  .cr2.c { background: #dcfce7; color: #15803d; }
+  .cr2.x { background: #fef3c7; color: #b45309; }
+  .cd { display: none; margin-top: 10px; font-size: 12px; color: var(--muted); line-height: 1.65; border-top: 1px solid var(--border); padding-top: 10px; }
   .cc.op .cd { display: block; }
+
+  /* ── ROADMAP ── */
   .rm { display: flex; gap: 14px; margin-top: 14px; }
-  .rp { flex: 1; background: var(--bgc2); border: 1px solid var(--bo); border-radius: 11px; padding: 14px; }
+  .rp { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: 11px; padding: 16px; border-top: 3px solid; }
+  .rp.n { border-top-color: #059669; }
+  .rp.x { border-top-color: #f59e0b; }
+  .rp.f { border-top-color: var(--brand); }
   .rpl { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 7px; }
-  .rpl.n { color: var(--gr); } .rpl.x { color: var(--go); } .rpl.f { color: var(--te); }
-  .rp h4 { font-size: 13px; font-weight: 600; margin-bottom: 7px; }
-  .rp li { font-size: 11px; color: var(--tm); margin-bottom: 4px; line-height: 1.5; padding-left: 14px; }
-  footer { text-align: center; padding: 16px 56px 36px; font-size: 12px; color: var(--tm); border-top: 1px solid var(--bo); }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-  .card:nth-child(1){animation-delay:.05s} .card:nth-child(2){animation-delay:.10s} .card:nth-child(3){animation-delay:.15s}
-  .card:nth-child(4){animation-delay:.20s} .card:nth-child(5){animation-delay:.25s} .card:nth-child(6){animation-delay:.30s}
+  .rpl.n { color: #059669; } .rpl.x { color: #b45309; } .rpl.f { color: var(--brand); }
+  .rp h4 { font-size: 13px; font-weight: 700; margin-bottom: 7px; color: var(--text); }
+  .rp li { font-size: 11px; color: var(--muted); margin-bottom: 4px; line-height: 1.5; padding-left: 14px; }
+
+  footer { text-align: center; padding: 16px 56px 32px; font-size: 12px; color: var(--muted); background: var(--bg2); border-top: 1px solid var(--border); }
+  footer span { color: var(--brand); font-weight: 600; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .card:nth-child(1){animation-delay:.05s} .card:nth-child(2){animation-delay:.10s}
+  .card:nth-child(3){animation-delay:.15s} .card:nth-child(4){animation-delay:.20s}
+  .card:nth-child(5){animation-delay:.25s} .card:nth-child(6){animation-delay:.30s}
   .card:nth-child(7){animation-delay:.35s} .card:nth-child(8){animation-delay:.40s}
 </style>
 </head>
 <body>
+
+<!-- TEAM STRIP -->
+<div class="team-strip">
+  <div class="team-strip-label">Built by</div>
+  <div class="team-members">
+    <div class="member">
+      <img class="member-avatar" src="/mnt/user-data/uploads/1772661872124_image.png" alt="Judist"/>
+      <div><div class="member-name">Judist</div><div class="member-role">GTM Systems Architect</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="member">
+      <img class="member-avatar" src="/mnt/user-data/uploads/1772661826277_image.png" alt="Xavier"/>
+      <div><div class="member-name">Xavier</div><div class="member-role">AI Initiatives</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="member">
+      <img class="member-avatar" src="/mnt/user-data/uploads/1772661840612_image.png" alt="Biz"/>
+      <div><div class="member-name">Biz 🐾</div><div class="member-role">RevOps Stakeholder</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="member">
+      <img class="member-avatar" src="/mnt/user-data/uploads/1772661853559_image.png" alt="Alison"/>
+      <div><div class="member-name">Alison</div><div class="member-role">GTM Systems</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
 <header>
-  <div class="eyebrow">GTM Systems · AI Hackathon · March 2026</div>
-  <h1>AI-Powered Lead Routing &amp; Account Matching</h1>
-  <p>An autonomous agent that resolves lead-to-account domain mismatches using fuzzy matching and real-time web research — reducing manual effort and improving pipeline attribution.</p>
+  <div class="eyebrow">BetterUp GTM Systems · AI Hackathon · March 2026</div>
+  <h1>AI-Powered <span>Lead Routing</span> &amp; Account Matching</h1>
+  <p>An autonomous agent that resolves lead-to-account domain mismatches using fuzzy matching and real-time web research — reducing manual effort and improving pipeline attribution at BetterUp.</p>
   <div class="badges">
     <span class="badge">🤖 Claude-Based Agent</span>
-    <span class="badge g">🚀 Hackathon Build</span>
-    <span class="badge t">📊 Salesforce + Traction</span>
+    <span class="badge">🚀 Hackathon Build</span>
+    <span class="badge w">📊 Salesforce + Traction</span>
   </div>
 </header>
+
+<!-- MAIN -->
 <main>
 
-  <div class="card ag">
-    <div class="lbl g">Agent Accuracy</div>
-    <div class="sv g" id="s1">0%</div>
+  <div class="card dark">
+    <div class="lbl" style="color:var(--brand-light)">Agent Accuracy</div>
+    <div class="sv dark-v" id="s1">0%</div>
     <p class="ss">Correct matches across all tested lead records</p>
   </div>
 
   <div class="card">
-    <div class="lbl">Cases Validated</div>
+    <div class="lbl m">Cases Validated</div>
     <div class="sv" id="s2">0</div>
     <p class="ss">Initial test cases — including complex edge cases</p>
   </div>
 
-  <div class="card ao">
-    <div class="lbl o">Manual Effort Saved</div>
-    <div class="sv o" id="s3">0%</div>
+  <div class="card dark">
+    <div class="lbl" style="color:var(--brand-light)">Manual Effort Saved</div>
+    <div class="sv dark-v" id="s3">0%</div>
     <p class="ss">Estimated reduction in manual lead-to-account reconciliation</p>
   </div>
 
@@ -160,11 +308,11 @@
     </div>
     <div class="pn act" id="p1">
       <h3>Domain Mismatch = Broken Attribution</h3>
-      <p>When MQL leads arrive in Salesforce, the email domain often doesn't match a parent or subsidiary account record — preventing Traction from auto-assigning the lead.</p>
+      <p>When MQL leads arrive in Salesforce, the email domain often doesn't match a parent or subsidiary account — preventing Traction from auto-assigning the lead.</p>
       <div class="il">
-        <div class="ir"><div class="ii">❌</div><div class="it"><strong>No account association</strong><span>Leads — especially those with personal emails — go unlinked to CRM accounts, breaking pipeline attribution.</span></div></div>
+        <div class="ir"><div class="ii">❌</div><div class="it"><strong>No account association</strong><span>Leads — especially personal emails — go unlinked to CRM accounts, breaking pipeline attribution.</span></div></div>
         <div class="ir"><div class="ii">📉</div><div class="it"><strong>Lost pipeline visibility</strong><span>Reps can't see account attendance, event influence, or follow-up history without the link.</span></div></div>
-        <div class="ir"><div class="ii">✋</div><div class="it"><strong>Manual cleanup required</strong><span>RevOps and admins spend cycles identifying and fixing orphaned records each week.</span></div></div>
+        <div class="ir"><div class="ii">✋</div><div class="it"><strong>Manual cleanup required</strong><span>RevOps and admins spend cycles identifying and fixing orphaned records every week.</span></div></div>
       </div>
     </div>
     <div class="pn" id="p2">
@@ -172,7 +320,7 @@
       <p>The agent resolves mismatches using programmatic fuzzy logic plus live web research:</p>
       <div class="il">
         <div class="ir"><div class="ii">🔍</div><div class="it"><strong>Layer 1 — Fuzzy Matching</strong><span>Scores lead company name + domain against all account records using weighted logic with hierarchy-aware prioritization (subsidiaries vs. ultimate parents).</span></div></div>
-        <div class="ir"><div class="ii">🌐</div><div class="it"><strong>Layer 2 — Web Research</strong><span>When fuzzy scores are inconclusive, the agent searches Wikipedia, LinkedIn, and company sites to resolve ambiguity and confirm the correct account.</span></div></div>
+        <div class="ir"><div class="ii">🌐</div><div class="it"><strong>Layer 2 — Web Research</strong><span>When fuzzy scores are inconclusive, the agent searches Wikipedia, LinkedIn, and company sites to resolve ambiguity.</span></div></div>
         <div class="ir"><div class="ii">🎯</div><div class="it"><strong>Confidence Score Output</strong><span>Returns a final confidence-scored recommendation — reviewable by humans or auto-applied above a set threshold.</span></div></div>
       </div>
     </div>
@@ -186,8 +334,8 @@
     </div>
   </div>
 
-  <div class="card at">
-    <div class="lbl t">How the Agent Works</div>
+  <div class="card">
+    <div class="lbl">How the Agent Works</div>
     <div class="flow">
       <div class="fs"><div class="fi">📥</div><span>Lead arrives in Salesforce</span></div>
       <div class="fa">›</div>
@@ -203,83 +351,86 @@
 
   <div class="card">
     <div class="lbl">Confidence Scoring — Example Outputs</div>
-    <div class="crw" id="cd">
+    <div class="crw">
       <div class="cr"><span class="cl">Accenture Federal</span><div class="cbb"><div class="cb" data-w="92"></div></div><span class="cs">92%</span></div>
-      <div class="cr"><span class="cl">Gap Inc. (pre-web)</span><div class="cbb"><div class="cb o" data-w="47"></div></div><span class="cs">47%</span></div>
-      <div class="cr"><span class="cl">Gap Inc. (post-web)</span><div class="cbb"><div class="cb g" data-w="96"></div></div><span class="cs">96%</span></div>
+      <div class="cr"><span class="cl">Gap Inc. (pre-web)</span><div class="cbb"><div class="cb amber" data-w="47"></div></div><span class="cs">47%</span></div>
+      <div class="cr"><span class="cl">Gap Inc. (post-web)</span><div class="cbb"><div class="cb green" data-w="96"></div></div><span class="cs">96%</span></div>
       <div class="cr"><span class="cl">CHRO personal email</span><div class="cbb"><div class="cb" data-w="78"></div></div><span class="cs">78%</span></div>
     </div>
   </div>
 
   <div class="card s2">
     <div class="lbl">Case Studies — Real Matches Made</div>
-    <p style="margin-bottom:12px;font-size:12px;">Click any case to expand the agent's reasoning.</p>
+    <p style="margin-bottom:12px;font-size:12px;color:var(--muted)">Click any case to expand the agent's reasoning.</p>
     <div class="cc" onclick="tc(this)">
       <div class="ct"><span>🏢 Gap Inc. vs. Get Group — Ambiguous Domain Tie</span><span class="cr2 x">Web Research Tiebreaker</span></div>
-      <div class="cd">The fuzzy matching script scored Gap Inc. and Get Group nearly identically — the domain and company name signals were too close to call. The agent escalated to web research, found the lead's LinkedIn confirming employment at Gap Inc., then cross-referenced Gap's Wikipedia entry and official site to confirm. Final match: <strong>Gap Inc. ✓</strong> at 96% confidence.</div>
+      <div class="cd">The fuzzy matching script scored Gap Inc. and Get Group nearly identically. The agent escalated to web research, found the lead's LinkedIn confirming employment at Gap Inc., then cross-referenced Gap's Wikipedia entry and official site to confirm. Final match: <strong>Gap Inc. ✓</strong> at 96% confidence.</div>
     </div>
     <div class="cc" onclick="tc(this)">
       <div class="ct"><span>📧 CHRO with Personal Gmail — Uplift Attendee</span><span class="cr2 c">Matched via Web Research</span></div>
-      <div class="cd">A C-suite executive registered for Uplift using their personal Gmail — common among senior leaders building personal brands. Domain fuzzy matching returned no CRM match. The agent used the name + company field to search LinkedIn and public bios, identified the correct employer, and linked to the parent account. <strong>Pipeline now attributed correctly.</strong></div>
+      <div class="cd">A C-suite executive registered for Uplift using their personal Gmail — common among senior leaders building personal brands. Domain fuzzy matching returned no CRM match. The agent used name + company to search LinkedIn and public bios, identifying the correct employer and linking to the parent account. <strong>Pipeline now attributed correctly.</strong></div>
     </div>
     <div class="cc" onclick="tc(this)">
       <div class="ct"><span>🏛️ Government Agency — DOGE-Era Personal Email</span><span class="cr2 c">Matched via Name + Org Research</span></div>
-      <div class="cd">During a period when many government employees registered with personal emails due to workplace policy concerns, domain matching was useless. The agent used web research to identify the agency from name and context signals — resolving the account match without any human intervention.</div>
+      <div class="cd">During a period when many government employees registered with personal emails, domain matching was useless. The agent used web research to identify the agency from name and context signals — resolving the account match without any human intervention.</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="lbl o">Business Impact</div>
-    <div class="il">
-      <div class="ir"><div class="ii">📊</div><div class="it"><strong>Pipeline Attribution</strong><span>Unlinked leads now tie back to accounts — enabling accurate ROI measurement on Uplift and events.</span></div></div>
-      <div class="ir"><div class="ii">📅</div><div class="it"><strong>Event Strategy</strong><span>Knowing attendee-to-account ratios enables smarter invite planning and capacity decisions.</span></div></div>
-      <div class="ir"><div class="ii">🧹</div><div class="it"><strong>Data Cleanliness</strong><span>Reduces orphaned records in Salesforce — improving rep trust in CRM data quality.</span></div></div>
+    <div class="lbl">Business Impact</div>
+    <div class="il" style="margin-top:8px">
+      <div class="ir"><div class="ii">📊</div><div class="it"><strong>Pipeline Attribution</strong><span>Unlinked leads now tie back to accounts — enabling accurate ROI on Uplift and events.</span></div></div>
+      <div class="ir"><div class="ii">📅</div><div class="it"><strong>Event Strategy</strong><span>Attendee-to-account ratios enable smarter invite planning for future events.</span></div></div>
+      <div class="ir"><div class="ii">🧹</div><div class="it"><strong>Data Cleanliness</strong><span>Reduces orphaned records — improving rep trust in CRM data quality.</span></div></div>
       <div class="ir"><div class="ii">⏱️</div><div class="it"><strong>Manual Effort</strong><span>Eliminates weekly reconciliation sprints for RevOps and GTM Systems.</span></div></div>
     </div>
   </div>
 
   <div class="card s3">
-    <div class="lbl t">Roadmap — From Hackathon to Production</div>
+    <div class="lbl">Roadmap — From Hackathon to Production</div>
     <div class="rm">
-      <div class="rp">
+      <div class="rp n">
         <div class="rpl n">▶ Phase 1 — Now</div>
         <h4>Weekly Batch Review</h4>
         <ul>
           <li>Agent runs weekly on prior 7 days of unmatched leads</li>
-          <li>Outputs CSV with recommendations + confidence scores</li>
+          <li>Outputs CSV with match recommendations + confidence scores</li>
           <li>GTM Systems QC review to validate and tune logic</li>
           <li>Iterate on scoring weights and thresholds in parallel</li>
         </ul>
       </div>
-      <div class="rp">
+      <div class="rp x">
         <div class="rpl x">⏭ Phase 2 — Next</div>
         <h4>Real-Time Integration</h4>
         <ul>
-          <li>API callout from Traction flow on domain mismatch</li>
+          <li>API callout from Traction flow on domain mismatch detection</li>
           <li>Agent executes synchronously at lead creation</li>
           <li>Auto-assign to account if confidence ≥ threshold</li>
           <li>Notify account owner on high-confidence matches</li>
         </ul>
       </div>
-      <div class="rp">
+      <div class="rp f">
         <div class="rpl f">🔭 Phase 3 — Future</div>
         <h4>Autonomous Continuous Matching</h4>
         <ul>
           <li>Always-on agent monitors all new leads in real time</li>
           <li>Self-improving scores via outcome feedback loop</li>
-          <li>Extend to contact records and event registrants</li>
-          <li>Uplift-specific pipeline for CHROs &amp; VP+ attendees</li>
+          <li>Extend to contact records and Uplift event registrants</li>
+          <li>CHRO &amp; VP+ personal email matching pipeline</li>
         </ul>
       </div>
     </div>
   </div>
 
 </main>
-<footer>Built at the BetterUp AI Hackathon · March 2026 · GTM Systems Team</footer>
+
+<footer>
+  Built at the <span>BetterUp AI Hackathon</span> · March 2026 · GTM Systems Team
+</footer>
+
 <script>
   function ac(id,target,suf,dur){
-    const el=document.getElementById(id),s=performance.now();
-    const n=parseInt(target);
+    const el=document.getElementById(id),s=performance.now(),n=parseInt(target);
     (function step(now){
       const t=Math.min((now-s)/dur,1),e=1-Math.pow(1-t,3);
       el.textContent=Math.round(n*e)+suf;
@@ -290,9 +441,7 @@
     setTimeout(()=>ac('s1',100,'%',1200),300);
     setTimeout(()=>ac('s2',5,' cases',900),500);
     setTimeout(()=>ac('s3',85,'%',1400),700);
-    setTimeout(()=>{
-      document.querySelectorAll('.cb').forEach(b=>b.style.width=b.dataset.w+'%');
-    },600);
+    setTimeout(()=>{ document.querySelectorAll('.cb').forEach(b=>b.style.width=b.dataset.w+'%'); },600);
   });
   function tog(btn,panel){
     btn.closest('.card').querySelectorAll('.tb').forEach(b=>b.classList.remove('act'));
