@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Lead Routing Agent — GTM Systems</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  :root {
+    --pu: #6B3FA0; --pul: #9B6FC8; --pud: #4A2878;
+    --go: #F5A623; --te: #00B4D8; --gr: #2EC4B6;
+    --bg: #0F0B1A; --bgc: #1A1428; --bgc2: #221C36;
+    --tp: #F0ECF8; --tm: #9988BB; --bo: rgba(107,63,160,0.3);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tp); }
+  header {
+    background: linear-gradient(135deg, var(--pud) 0%, #1A0A3A 60%, var(--bg) 100%);
+    padding: 44px 56px 32px; border-bottom: 1px solid var(--bo); position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(107,63,160,0.22) 0%, transparent 70%);
+    top: -200px; right: -100px; pointer-events: none;
+  }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--pul); margin-bottom: 10px; }
+  header h1 {
+    font-size: 38px; font-weight: 800; line-height: 1.1; max-width: 680px; margin-bottom: 12px;
+    background: linear-gradient(90deg, #fff 0%, var(--pul) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  header p { color: var(--tm); font-size: 14px; max-width: 640px; line-height: 1.65; }
+  .badges { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(107,63,160,0.18); border: 1px solid var(--bo);
+    border-radius: 20px; padding: 4px 13px; font-size: 12px; font-weight: 500; color: var(--pul);
+  }
+  .badge.g { background: rgba(245,166,35,0.12); border-color: rgba(245,166,35,0.3); color: var(--go); }
+  .badge.t { background: rgba(0,180,216,0.12); border-color: rgba(0,180,216,0.3); color: var(--te); }
+  main { padding: 36px 56px 56px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .card {
+    background: var(--bgc); border: 1px solid var(--bo); border-radius: 16px; padding: 26px;
+    position: relative; overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: fadeUp 0.5s ease both;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(107,63,160,0.35); }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--pu), var(--pul)); border-radius: 16px 16px 0 0;
+  }
+  .card.ag::before { background: linear-gradient(90deg,#1A8A80,var(--gr)); }
+  .card.at::before { background: linear-gradient(90deg,#007A95,var(--te)); }
+  .card.ao::before { background: linear-gradient(90deg,#C77A00,var(--go)); }
+  .card.s2 { grid-column: span 2; }
+  .card.s3 { grid-column: span 3; }
+  .lbl { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--pul); margin-bottom: 8px; }
+  .lbl.g { color: var(--gr); } .lbl.o { color: var(--go); } .lbl.t { color: var(--te); }
+  .sv { font-size: 48px; font-weight: 800; line-height: 1; margin-bottom: 5px;
+    background: linear-gradient(135deg,#fff 30%,var(--pul)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .sv.g { background: linear-gradient(135deg,#B2DFDB,var(--gr)); -webkit-background-clip: text; background-clip: text; }
+  .sv.o { background: linear-gradient(135deg,#FFE082,var(--go)); -webkit-background-clip: text; background-clip: text; }
+  .ss { font-size: 13px; color: var(--tm); }
+  .card h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .card p { font-size: 13px; color: var(--tm); line-height: 1.65; }
+  .tbh { display: flex; background: var(--bgc2); border-radius: 9px; padding: 3px; gap: 3px; margin-bottom: 18px; }
+  .tb {
+    flex: 1; padding: 8px 6px; border: none; border-radius: 6px; background: transparent;
+    color: var(--tm); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter',sans-serif;
+  }
+  .tb.act { background: var(--pu); color: #fff; box-shadow: 0 2px 10px rgba(107,63,160,0.5); }
+  .pn { display: none; } .pn.act { display: block; }
+  .il { display: flex; flex-direction: column; gap: 9px; margin-top: 12px; }
+  .ir { display: flex; align-items: flex-start; gap: 10px; }
+  .ii {
+    width: 30px; height: 30px; border-radius: 7px; background: rgba(107,63,160,0.18);
+    border: 1px solid var(--bo); display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0; margin-top: 1px;
+  }
+  .it strong { font-size: 13px; display: block; margin-bottom: 1px; }
+  .it span { font-size: 12px; color: var(--tm); line-height: 1.5; }
+  .flow { display: flex; align-items: center; margin-top: 18px; flex-wrap: wrap; gap: 2px; }
+  .fs { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 7px; flex: 1; min-width: 70px; }
+  .fi {
+    width: 48px; height: 48px; border-radius: 12px; background: var(--bgc2); border: 1px solid var(--bo);
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+    transition: all 0.2s; cursor: default;
+  }
+  .fs:hover .fi { border-color: var(--pul); background: rgba(107,63,160,0.18); box-shadow: 0 0 16px rgba(107,63,160,0.4); }
+  .fs span { font-size: 11px; color: var(--tm); font-weight: 500; max-width: 72px; line-height: 1.4; }
+  .fa { font-size: 16px; color: var(--pul); opacity: 0.45; flex: 0; position: relative; top: -10px; }
+  .crw { margin-top: 14px; }
+  .cr { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .cl { font-size: 11px; color: var(--tm); width: 120px; flex-shrink: 0; }
+  .cbb { flex: 1; height: 7px; background: var(--bgc2); border-radius: 4px; overflow: hidden; }
+  .cb { height: 100%; border-radius: 4px; background: linear-gradient(90deg,var(--pu),var(--pul)); width: 0; transition: width 1.1s cubic-bezier(0.25,1,0.5,1); }
+  .cb.o { background: linear-gradient(90deg,#C77A00,var(--go)); }
+  .cb.g { background: linear-gradient(90deg,#1A8A80,var(--gr)); }
+  .cs { font-size: 11px; font-weight: 700; width: 32px; text-align: right; }
+  .cc { background: var(--bgc2); border: 1px solid var(--bo); border-radius: 11px; padding: 15px 18px; cursor: pointer; transition: all 0.2s; margin-bottom: 9px; }
+  .cc:hover { border-color: var(--pul); }
+  .cc.op { border-color: var(--pu); }
+  .ct { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; gap: 10px; }
+  .cr2 { font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; white-space: nowrap; }
+  .cr2.c { background: rgba(46,196,182,0.15); color: var(--gr); }
+  .cr2.x { background: rgba(245,166,35,0.15); color: var(--go); }
+  .cd { display: none; margin-top: 10px; font-size: 12px; color: var(--tm); line-height: 1.65; border-top: 1px solid var(--bo); padding-top: 10px; }
+  .cc.op .cd { display: block; }
+  .rm { display: flex; gap: 14px; margin-top: 14px; }
+  .rp { flex: 1; background: var(--bgc2); border: 1px solid var(--bo); border-radius: 11px; padding: 14px; }
+  .rpl { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 7px; }
+  .rpl.n { color: var(--gr); } .rpl.x { color: var(--go); } .rpl.f { color: var(--te); }
+  .rp h4 { font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+  .rp li { font-size: 11px; color: var(--tm); margin-bottom: 4px; line-height: 1.5; padding-left: 14px; }
+  footer { text-align: center; padding: 16px 56px 36px; font-size: 12px; color: var(--tm); border-top: 1px solid var(--bo); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  .card:nth-child(1){animation-delay:.05s} .card:nth-child(2){animation-delay:.10s} .card:nth-child(3){animation-delay:.15s}
+  .card:nth-child(4){animation-delay:.20s} .card:nth-child(5){animation-delay:.25s} .card:nth-child(6){animation-delay:.30s}
+  .card:nth-child(7){animation-delay:.35s} .card:nth-child(8){animation-delay:.40s}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">GTM Systems · AI Hackathon · March 2026</div>
+  <h1>AI-Powered Lead Routing &amp; Account Matching</h1>
+  <p>An autonomous agent that resolves lead-to-account domain mismatches using fuzzy matching and real-time web research — reducing manual effort and improving pipeline attribution.</p>
+  <div class="badges">
+    <span class="badge">🤖 Claude-Based Agent</span>
+    <span class="badge g">🚀 Hackathon Build</span>
+    <span class="badge t">📊 Salesforce + Traction</span>
+  </div>
+</header>
+<main>
+
+  <div class="card ag">
+    <div class="lbl g">Agent Accuracy</div>
+    <div class="sv g" id="s1">0%</div>
+    <p class="ss">Correct matches across all tested lead records</p>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Cases Validated</div>
+    <div class="sv" id="s2">0</div>
+    <p class="ss">Initial test cases — including complex edge cases</p>
+  </div>
+
+  <div class="card ao">
+    <div class="lbl o">Manual Effort Saved</div>
+    <div class="sv o" id="s3">0%</div>
+    <p class="ss">Estimated reduction in manual lead-to-account reconciliation</p>
+  </div>
+
+  <div class="card s2">
+    <div class="lbl">The Challenge &amp; The Solution</div>
+    <div class="tbh">
+      <button class="tb act" onclick="tog(this,'p1')">⚠️ The Problem</button>
+      <button class="tb" onclick="tog(this,'p2')">✅ The Solution</button>
+      <button class="tb" onclick="tog(this,'p3')">🔧 Non-AI Win</button>
+    </div>
+    <div class="pn act" id="p1">
+      <h3>Domain Mismatch = Broken Attribution</h3>
+      <p>When MQL leads arrive in Salesforce, the email domain often doesn't match a parent or subsidiary account record — preventing Traction from auto-assigning the lead.</p>
+      <div class="il">
+        <div class="ir"><div class="ii">❌</div><div class="it"><strong>No account association</strong><span>Leads — especially those with personal emails — go unlinked to CRM accounts, breaking pipeline attribution.</span></div></div>
+        <div class="ir"><div class="ii">📉</div><div class="it"><strong>Lost pipeline visibility</strong><span>Reps can't see account attendance, event influence, or follow-up history without the link.</span></div></div>
+        <div class="ir"><div class="ii">✋</div><div class="it"><strong>Manual cleanup required</strong><span>RevOps and admins spend cycles identifying and fixing orphaned records each week.</span></div></div>
+      </div>
+    </div>
+    <div class="pn" id="p2">
+      <h3>A Two-Layer AI Matching Agent</h3>
+      <p>The agent resolves mismatches using programmatic fuzzy logic plus live web research:</p>
+      <div class="il">
+        <div class="ir"><div class="ii">🔍</div><div class="it"><strong>Layer 1 — Fuzzy Matching</strong><span>Scores lead company name + domain against all account records using weighted logic with hierarchy-aware prioritization (subsidiaries vs. ultimate parents).</span></div></div>
+        <div class="ir"><div class="ii">🌐</div><div class="it"><strong>Layer 2 — Web Research</strong><span>When fuzzy scores are inconclusive, the agent searches Wikipedia, LinkedIn, and company sites to resolve ambiguity and confirm the correct account.</span></div></div>
+        <div class="ir"><div class="ii">🎯</div><div class="it"><strong>Confidence Score Output</strong><span>Returns a final confidence-scored recommendation — reviewable by humans or auto-applied above a set threshold.</span></div></div>
+      </div>
+    </div>
+    <div class="pn" id="p3">
+      <h3>Use Case #2: Solved Without AI</h3>
+      <p>Not every problem needs an agent. For non-MQL demo requests, updating the existing Traction flow was the right call:</p>
+      <div class="il">
+        <div class="ir"><div class="ii">⚡</div><div class="it"><strong>Traction Flow Update</strong><span>When a demo request doesn't meet MQL criteria, Traction now silently assigns the lead/contact to the correct account — no AE notification spam.</span></div></div>
+        <div class="ir"><div class="ii">💡</div><div class="it"><strong>Right tool, right problem</strong><span>Automation beats AI when logic is deterministic. AI is reserved for ambiguous, research-heavy matching that can't be scripted.</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card at">
+    <div class="lbl t">How the Agent Works</div>
+    <div class="flow">
+      <div class="fs"><div class="fi">📥</div><span>Lead arrives in Salesforce</span></div>
+      <div class="fa">›</div>
+      <div class="fs"><div class="fi">🔣</div><span>Fuzzy match score computed</span></div>
+      <div class="fa">›</div>
+      <div class="fs"><div class="fi">🌐</div><span>Web research (if needed)</span></div>
+      <div class="fa">›</div>
+      <div class="fs"><div class="fi">🎯</div><span>Confidence score output</span></div>
+      <div class="fa">›</div>
+      <div class="fs"><div class="fi">✅</div><span>Account matched &amp; assigned</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Confidence Scoring — Example Outputs</div>
+    <div class="crw" id="cd">
+      <div class="cr"><span class="cl">Accenture Federal</span><div class="cbb"><div class="cb" data-w="92"></div></div><span class="cs">92%</span></div>
+      <div class="cr"><span class="cl">Gap Inc. (pre-web)</span><div class="cbb"><div class="cb o" data-w="47"></div></div><span class="cs">47%</span></div>
+      <div class="cr"><span class="cl">Gap Inc. (post-web)</span><div class="cbb"><div class="cb g" data-w="96"></div></div><span class="cs">96%</span></div>
+      <div class="cr"><span class="cl">CHRO personal email</span><div class="cbb"><div class="cb" data-w="78"></div></div><span class="cs">78%</span></div>
+    </div>
+  </div>
+
+  <div class="card s2">
+    <div class="lbl">Case Studies — Real Matches Made</div>
+    <p style="margin-bottom:12px;font-size:12px;">Click any case to expand the agent's reasoning.</p>
+    <div class="cc" onclick="tc(this)">
+      <div class="ct"><span>🏢 Gap Inc. vs. Get Group — Ambiguous Domain Tie</span><span class="cr2 x">Web Research Tiebreaker</span></div>
+      <div class="cd">The fuzzy matching script scored Gap Inc. and Get Group nearly identically — the domain and company name signals were too close to call. The agent escalated to web research, found the lead's LinkedIn confirming employment at Gap Inc., then cross-referenced Gap's Wikipedia entry and official site to confirm. Final match: <strong>Gap Inc. ✓</strong> at 96% confidence.</div>
+    </div>
+    <div class="cc" onclick="tc(this)">
+      <div class="ct"><span>📧 CHRO with Personal Gmail — Uplift Attendee</span><span class="cr2 c">Matched via Web Research</span></div>
+      <div class="cd">A C-suite executive registered for Uplift using their personal Gmail — common among senior leaders building personal brands. Domain fuzzy matching returned no CRM match. The agent used the name + company field to search LinkedIn and public bios, identified the correct employer, and linked to the parent account. <strong>Pipeline now attributed correctly.</strong></div>
+    </div>
+    <div class="cc" onclick="tc(this)">
+      <div class="ct"><span>🏛️ Government Agency — DOGE-Era Personal Email</span><span class="cr2 c">Matched via Name + Org Research</span></div>
+      <div class="cd">During a period when many government employees registered with personal emails due to workplace policy concerns, domain matching was useless. The agent used web research to identify the agency from name and context signals — resolving the account match without any human intervention.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="lbl o">Business Impact</div>
+    <div class="il">
+      <div class="ir"><div class="ii">📊</div><div class="it"><strong>Pipeline Attribution</strong><span>Unlinked leads now tie back to accounts — enabling accurate ROI measurement on Uplift and events.</span></div></div>
+      <div class="ir"><div class="ii">📅</div><div class="it"><strong>Event Strategy</strong><span>Knowing attendee-to-account ratios enables smarter invite planning and capacity decisions.</span></div></div>
+      <div class="ir"><div class="ii">🧹</div><div class="it"><strong>Data Cleanliness</strong><span>Reduces orphaned records in Salesforce — improving rep trust in CRM data quality.</span></div></div>
+      <div class="ir"><div class="ii">⏱️</div><div class="it"><strong>Manual Effort</strong><span>Eliminates weekly reconciliation sprints for RevOps and GTM Systems.</span></div></div>
+    </div>
+  </div>
+
+  <div class="card s3">
+    <div class="lbl t">Roadmap — From Hackathon to Production</div>
+    <div class="rm">
+      <div class="rp">
+        <div class="rpl n">▶ Phase 1 — Now</div>
+        <h4>Weekly Batch Review</h4>
+        <ul>
+          <li>Agent runs weekly on prior 7 days of unmatched leads</li>
+          <li>Outputs CSV with recommendations + confidence scores</li>
+          <li>GTM Systems QC review to validate and tune logic</li>
+          <li>Iterate on scoring weights and thresholds in parallel</li>
+        </ul>
+      </div>
+      <div class="rp">
+        <div class="rpl x">⏭ Phase 2 — Next</div>
+        <h4>Real-Time Integration</h4>
+        <ul>
+          <li>API callout from Traction flow on domain mismatch</li>
+          <li>Agent executes synchronously at lead creation</li>
+          <li>Auto-assign to account if confidence ≥ threshold</li>
+          <li>Notify account owner on high-confidence matches</li>
+        </ul>
+      </div>
+      <div class="rp">
+        <div class="rpl f">🔭 Phase 3 — Future</div>
+        <h4>Autonomous Continuous Matching</h4>
+        <ul>
+          <li>Always-on agent monitors all new leads in real time</li>
+          <li>Self-improving scores via outcome feedback loop</li>
+          <li>Extend to contact records and event registrants</li>
+          <li>Uplift-specific pipeline for CHROs &amp; VP+ attendees</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+<footer>Built at the BetterUp AI Hackathon · March 2026 · GTM Systems Team</footer>
+<script>
+  function ac(id,target,suf,dur){
+    const el=document.getElementById(id),s=performance.now();
+    const n=parseInt(target);
+    (function step(now){
+      const t=Math.min((now-s)/dur,1),e=1-Math.pow(1-t,3);
+      el.textContent=Math.round(n*e)+suf;
+      if(t<1)requestAnimationFrame(step);
+    })(s);
+  }
+  window.addEventListener('load',()=>{
+    setTimeout(()=>ac('s1',100,'%',1200),300);
+    setTimeout(()=>ac('s2',5,' cases',900),500);
+    setTimeout(()=>ac('s3',85,'%',1400),700);
+    setTimeout(()=>{
+      document.querySelectorAll('.cb').forEach(b=>b.style.width=b.dataset.w+'%');
+    },600);
+  });
+  function tog(btn,panel){
+    btn.closest('.card').querySelectorAll('.tb').forEach(b=>b.classList.remove('act'));
+    btn.closest('.card').querySelectorAll('.pn').forEach(p=>p.classList.remove('act'));
+    btn.classList.add('act');
+    document.getElementById(panel).classList.add('act');
+  }
+  function tc(el){
+    const o=el.classList.contains('op');
+    document.querySelectorAll('.cc').forEach(c=>c.classList.remove('op'));
+    if(!o)el.classList.add('op');
+  }
+</script>
+</body>
+</html>
