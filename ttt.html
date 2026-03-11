@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIC TAC TOE</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080810; --surface: #0f0f1a; --card: #141425; --border: #1f1f38;
+  --x: #ff2d55; --o: #0af; --gold: #ffc107; --muted: #44445a;
+  --text: #e0e0f0; --faint: #22223a;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(rgba(0,170,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,170,255,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+.app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 40px}
+
+/* TITLE */
+.title-wrap{text-align:center;margin-bottom:20px}
+.title{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,10vw,64px);letter-spacing:14px;background:linear-gradient(100deg,var(--x) 0%,#ff9500 40%,var(--o) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 30px rgba(0,170,255,.25));line-height:1}
+.subtitle{font-size:10px;letter-spacing:5px;color:var(--muted);text-transform:uppercase;margin-top:4px}
+
+/* MODE */
+.mode-bar{display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:5px;margin-bottom:20px}
+.mode-btn{padding:9px 22px;border:none;border-radius:40px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .25s;background:transparent;color:var(--muted)}
+.mode-btn.active{background:var(--card);color:var(--text);box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.mode-btn.pvp.active{color:var(--o);border:1px solid rgba(0,170,255,.3)}
+.mode-btn.pvc.active{color:var(--x);border:1px solid rgba(255,45,85,.3)}
+
+/* DIFF */
+.diff-selector{display:flex;align-items:center;gap:10px;margin-bottom:18px;overflow:hidden;max-height:60px;transition:max-height .3s,opacity .3s,margin .3s;opacity:1}
+.diff-selector.hidden{max-height:0;opacity:0;margin-bottom:0}
+.diff-label-txt{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+.diff-pills{display:flex;gap:6px;flex-wrap:wrap}
+.diff-pill{padding:6px 14px;border-radius:30px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.diff-pill:hover{color:var(--text);border-color:var(--muted)}
+.diff-pill[data-d="0"].active{background:#1a3a2a;color:#00ff88;border-color:#00ff8855}
+.diff-pill[data-d="1"].active{background:#3a3000;color:#ffd700;border-color:#ffd70055}
+.diff-pill[data-d="2"].active{background:#3a1800;color:#ff8800;border-color:#ff880055}
+.diff-pill[data-d="3"].active{background:#3a0018;color:var(--x);border-color:rgba(255,45,85,.4)}
+
+/* ROUND BADGE */
+.round-badge{display:flex;align-items:center;gap:8px;padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:30px;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+.round-dot{width:7px;height:7px;border-radius:50%;animation:rpulse 1.4s ease-in-out infinite}
+@keyframes rpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+.round-diff{font-weight:700}
+
+/* SCOREBOARD */
+.scoreboard{display:grid;grid-template-columns:1fr 56px 1fr;width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:16px}
+.score-side{display:flex;flex-direction:column;align-items:center;padding:16px 12px;gap:6px;transition:background .4s}
+.score-side.left{border-right:1px solid var(--border)}
+.score-side.right{border-left:1px solid var(--border)}
+.score-side.active-turn{background:rgba(255,255,255,.03)}
+.score-who{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
+.score-mark{font-family:'Bebas Neue',sans-serif;font-size:20px}
+.score-mark.x{color:var(--x);text-shadow:0 0 10px var(--x)}
+.score-mark.o{color:var(--o);text-shadow:0 0 10px var(--o)}
+.score-n{font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:1;transition:transform .2s;min-width:48px;text-align:center}
+.score-n.x{color:var(--x)}
+.score-n.o{color:var(--o)}
+.score-n.bump{animation:bump .3s ease}
+.score-n.neg-bump{animation:negbump .35s ease}
+@keyframes bump{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+@keyframes negbump{0%{transform:scale(1) translateX(0)}20%{transform:scale(1.2) translateX(-4px)}40%{transform:scale(1.1) translateX(4px)}60%{transform:scale(1.05) translateX(-2px)}100%{transform:scale(1) translateX(0)}}
+.score-pips{display:flex;gap:5px}
+.pip{width:8px;height:8px;border-radius:50%;background:var(--faint);transition:background .3s,box-shadow .3s}
+.pip.on.x{background:var(--x);box-shadow:0 0 6px var(--x)}
+.pip.on.o{background:var(--o);box-shadow:0 0 6px var(--o)}
+.score-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--muted);letter-spacing:1px}
+.score-mid strong{font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--text);letter-spacing:2px}
+
+/* BOARD */
+.board-wrap{position:relative;width:100%;max-width:420px;margin-bottom:16px}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%}
+.cell{aspect-ratio:1;background:var(--card);border:1.5px solid var(--border);border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,9vw,54px);transition:border-color .15s,background .15s,transform .1s;user-select:none;position:relative;overflow:hidden}
+.cell::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,rgba(255,255,255,.06),transparent 70%);opacity:0;transition:opacity .15s;border-radius:14px}
+.cell:hover:not(.taken):not(.dead)::after{opacity:1}
+.cell:hover:not(.taken):not(.dead){border-color:rgba(255,255,255,.2);transform:scale(1.04)}
+.cell.taken,.cell.dead{cursor:default}
+.cell .mk{position:relative;z-index:1;animation:pop .22s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes pop{from{transform:scale(0) rotate(-20deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.mk.x{color:var(--x);text-shadow:0 0 18px var(--x)}
+.mk.o{color:var(--o);text-shadow:0 0 18px var(--o)}
+.cell.winner-cell{border-color:var(--gold)!important;background:rgba(255,193,7,.08)!important;animation:wink .5s ease 2}
+@keyframes wink{0%,100%{background:rgba(255,193,7,.08)}50%{background:rgba(255,193,7,.18)}}
+
+/* STATUS */
+.status{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 18px;text-align:center;font-size:13px;letter-spacing:1.5px;min-height:48px;display:flex;align-items:center;justify-content:center;transition:border-color .3s,color .3s;margin-bottom:14px}
+.status.xt{color:var(--x);border-color:rgba(255,45,85,.3)}
+.status.ot{color:var(--o);border-color:rgba(0,170,255,.3)}
+.status.think{color:var(--o);border-color:rgba(0,170,255,.25)}
+.status.res{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:4px}
+.status.xwin{color:var(--x);border-color:rgba(255,45,85,.5)}
+.status.owin{color:var(--o);border-color:rgba(0,170,255,.5)}
+.status.draw{color:var(--gold);border-color:rgba(255,193,7,.4)}
+.dots span{animation:dk 1.2s infinite;color:var(--o)}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dk{0%,80%,100%{opacity:0}40%{opacity:1}}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:10px;width:100%;max-width:420px}
+.btn{flex:1;padding:14px;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:4px;cursor:pointer;transition:transform .12s,box-shadow .2s;text-transform:uppercase}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0)}
+.btn-next{background:linear-gradient(135deg,var(--x),#ff6577);color:#fff;box-shadow:0 4px 20px rgba(255,45,85,.35)}
+.btn-next:hover{box-shadow:0 8px 28px rgba(255,45,85,.5)}
+.btn-restart{background:var(--surface);color:var(--muted);border:1px solid var(--border);font-size:14px;letter-spacing:3px;flex:0 0 auto;padding:14px 18px}
+.btn-restart:hover{color:var(--text);border-color:var(--muted)}
+.btn.hidden{display:none}
+
+/* ═══ SERIES OVERLAY ═══ */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s}
+.overlay.show{opacity:1;pointer-events:all}
+.ov-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:44px 52px;text-align:center;max-width:420px;width:92%;transform:scale(.82);transition:transform .45s cubic-bezier(.34,1.56,.64,1);box-shadow:0 0 80px rgba(0,0,0,.7);z-index:2;overflow:hidden}
+.overlay.show .ov-card{transform:scale(1)}
+
+/* drumroll progress bar */
+.drumroll-bar{position:absolute;bottom:0;left:0;height:3px;background:var(--gold);width:0%;transition:width linear;border-radius:0 0 24px 24px}
+
+.ov-big{font-size:64px;display:block;margin-bottom:16px;animation:ovpop .5s cubic-bezier(.34,1.56,.64,1) .2s both}
+@keyframes ovpop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.ov-title{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:6px;margin-bottom:8px;opacity:0;transform:translateY(12px);transition:opacity .4s,transform .4s}
+.ov-title.visible{opacity:1;transform:translateY(0)}
+.ov-title.xc{color:var(--x);text-shadow:0 0 30px var(--x)}
+.ov-title.oc{color:var(--o);text-shadow:0 0 30px var(--o)}
+.ov-title.dc{color:var(--gold)}
+.ov-sub{color:var(--muted);font-size:11px;letter-spacing:2px;margin-bottom:10px;opacity:0;transition:opacity .4s .1s}
+.ov-sub.visible{opacity:1}
+
+/* FINAL SCORE DISPLAY */
+.ov-score{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:28px;opacity:0;transform:scale(.8);transition:opacity .4s .2s,transform .4s .2s}
+.ov-score.visible{opacity:1;transform:scale(1)}
+.ov-score-num{font-family:'Bebas Neue',sans-serif;font-size:72px;line-height:1}
+.ov-score-num.x{color:var(--x);text-shadow:0 0 24px rgba(255,45,85,.6)}
+.ov-score-num.o{color:var(--o);text-shadow:0 0 24px rgba(0,170,255,.6)}
+.ov-score-dash{font-family:'Bebas Neue',sans-serif;font-size:40px;color:var(--muted)}
+.ov-score-labels{display:flex;justify-content:space-between;font-size:9px;letter-spacing:3px;color:var(--muted);padding:0 4px;margin-top:-6px;margin-bottom:6px;opacity:0;transition:opacity .4s .25s}
+.ov-score-labels.visible{opacity:1}
+
+.ov-btn{padding:14px 40px;background:transparent;border:2px solid var(--text);border-radius:12px;color:var(--text);font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:5px;cursor:pointer;transition:all .2s;opacity:0;transition:opacity .4s .3s,background .2s,color .2s}
+.ov-btn.visible{opacity:1}
+.ov-btn:hover{background:var(--text);color:var(--bg)}
+
+/* DRUMROLL TEXT */
+.drumroll-txt{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:4px;color:var(--gold);margin-bottom:20px;min-height:24px;opacity:0;transition:opacity .3s}
+.drumroll-txt.visible{opacity:1}
+
+/* PARTICLES */
+.particle-layer{position:fixed;inset:0;z-index:199;pointer-events:none;overflow:hidden}
+.ov-particle-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1;border-radius:24px}
+.p-item{position:absolute;top:-30px;animation:pfall linear forwards;user-select:none;will-change:transform}
+@keyframes pfall{to{transform:translateY(115vh) rotate(540deg);opacity:0}}
+.ov-p{position:absolute;top:-20px;animation:ovfall linear forwards;user-select:none}
+@keyframes ovfall{to{transform:translateY(110%) rotate(360deg);opacity:0}}
+
+/* GLOW */
+.score-side.glow-win{animation:sideWin .8s ease}
+.score-side.glow-lose{animation:sideLose .8s ease}
+@keyframes sideWin{0%,100%{background:transparent}40%{background:rgba(255,193,7,.1)}}
+@keyframes sideLose{0%,100%{background:transparent}40%{background:rgba(255,45,85,.06)}}
+
+/* MINUS FLASH */
+.minus-flash{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--x);text-shadow:0 0 20px var(--x);pointer-events:none;animation:minusfloat 1s ease forwards;z-index:10}
+@keyframes minusfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-120%) scale(1.4)}}
+
+/* NAME EDITING */
+.score-who-wrap{display:flex;align-items:center;gap:4px;cursor:pointer;group:true}
+.score-who{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);transition:color .2s;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.score-who-wrap:hover .score-who{color:var(--text)}
+.edit-icon{font-size:8px;color:var(--muted);opacity:0;transition:opacity .2s;flex-shrink:0}
+.score-who-wrap:hover .edit-icon{opacity:1}
+.name-input{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text);background:var(--faint);border:1px solid var(--border);border-radius:6px;padding:3px 7px;width:80px;text-align:center;outline:none;transition:border-color .2s}
+.name-input:focus{border-color:var(--gold);color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div class="particle-layer" id="particleLayer"></div>
+
+<!-- SERIES OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="ov-card" id="ovCard">
+    <div class="ov-particle-layer" id="ovParticles"></div>
+    <div class="drumroll-bar" id="drumrollBar"></div>
+    <span class="ov-big" id="ovEmoji">🥁</span>
+    <div class="drumroll-txt" id="drumrollTxt">DRUMROLL...</div>
+    <div class="ov-title" id="ovTitle">YOU WIN</div>
+    <div class="ov-sub" id="ovSub">SERIES COMPLETE</div>
+    <div class="ov-score-labels" id="ovScoreLabels">
+      <span id="ovLabelL">YOU</span><span id="ovLabelR">CPU</span>
+    </div>
+    <div class="ov-score" id="ovScore">
+      <span class="ov-score-num x" id="ovScoreX">0</span>
+      <span class="ov-score-dash">–</span>
+      <span class="ov-score-num o" id="ovScoreO">0</span>
+    </div>
+    <button class="ov-btn" id="ovBtn" onclick="fullRestart()">PLAY AGAIN</button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="title-wrap">
+    <div class="title">TIC·TAC·TOE</div>
+    <div class="subtitle">best of 5 &nbsp;·&nbsp; escalating difficulty</div>
+  </div>
+
+  <div class="mode-bar">
+    <button class="mode-btn pvc active" id="btnPVC" onclick="setMode('pvc')">⚡ vs CPU</button>
+    <button class="mode-btn pvp" id="btnPVP" onclick="setMode('pvp')">👥 2 Players</button>
+  </div>
+
+  <div class="diff-selector" id="diffSelector">
+    <span class="diff-label-txt">Start at:</span>
+    <div class="diff-pills">
+      <button class="diff-pill active" data-d="0" onclick="setBaseDiff(0)">Easy</button>
+      <button class="diff-pill" data-d="1" onclick="setBaseDiff(1)">Medium</button>
+      <button class="diff-pill" data-d="2" onclick="setBaseDiff(2)">Hard</button>
+      <button class="diff-pill" data-d="3" onclick="setBaseDiff(3)">Expert</button>
+    </div>
+  </div>
+
+  <div class="round-badge" id="roundBadge">
+    <div class="round-dot" id="rdot" style="background:#00ff88"></div>
+    <span>Round <span id="roundNum">1</span> of 5</span>
+    <span>·</span>
+    <span class="round-diff" id="rdiffLabel" style="color:#00ff88">EASY</span>
+  </div>
+
+  <div class="scoreboard">
+    <div class="score-side left active-turn" id="sideLeft" style="position:relative">
+      <div class="score-who-wrap" id="nameWrapLeft" onclick="startEditName('left')" title="Click to rename">
+        <div class="score-who" id="nameLeft">YOU</div>
+        <span class="edit-icon">✎</span>
+      </div>
+      <div class="score-mark x">✕</div>
+      <div class="score-n x" id="numLeft">0</div>
+      <div class="score-pips" id="pipsLeft"></div>
+    </div>
+    <div class="score-mid">
+      <strong>VS</strong>
+      <span>BEST</span><span>OF 5</span>
+    </div>
+    <div class="score-side right" id="sideRight" style="position:relative">
+      <div class="score-who-wrap" id="nameWrapRight" onclick="startEditName('right')" title="Click to rename">
+        <div class="score-who" id="nameRight">CPU</div>
+        <span class="edit-icon">✎</span>
+      </div>
+      <div class="score-mark o">○</div>
+      <div class="score-n o" id="numRight">0</div>
+      <div class="score-pips" id="pipsRight"></div>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="status xt" id="status">YOUR TURN</div>
+
+  <div class="btn-row">
+    <button class="btn btn-next hidden" id="btnNext" onclick="nextRound()">Next Round →</button>
+    <button class="btn btn-restart" onclick="fullRestart()">↺ Reset</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const DIFF_NAMES  = ['EASY','MEDIUM','HARD','EXPERT','IMPOSSIBLE'];
+const DIFF_COLORS = ['#00ff88','#ffd700','#ff8800','#ff2d55','#cc44ff'];
+const THINK_MS    = [560,460,370,290,210];
+const WIN_LINES   = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const DRUMROLL_MS = 3000; // drumroll duration before reveal
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let mode='pvc', baseDiff=0, round=0;
+let scores={x:0,o:0};
+let board, turn, gameOver, thinking;
+
+// ══════════════════════════════════════════
+// WEB AUDIO — DRUMROLL
+// ══════════════════════════════════════════
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playDrumHit(time, gain=0.4, pitch=180) {
+  const ctx = getAudio();
+  // Snare-like noise burst
+  const bufSize = ctx.sampleRate * 0.04;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i=0;i<bufSize;i++) data[i]=(Math.random()*2-1);
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(gain, time);
+  env.gain.exponentialRampToValueAtTime(0.001, time+0.06);
+
+  // body tone
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(pitch, time);
+  osc.frequency.exponentialRampToValueAtTime(pitch*0.4, time+0.05);
+  const oscEnv = ctx.createGain();
+  oscEnv.gain.setValueAtTime(gain*0.5, time);
+  oscEnv.gain.exponentialRampToValueAtTime(0.001, time+0.08);
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 2200;
+  filter.Q.value = 0.8;
+
+  src.connect(filter); filter.connect(env); env.connect(ctx.destination);
+  osc.connect(oscEnv); oscEnv.connect(ctx.destination);
+
+  src.start(time); src.stop(time+0.06);
+  osc.start(time); osc.stop(time+0.1);
+}
+
+function playDrumroll(durationMs, onEnd) {
+  const ctx = getAudio();
+  const now = ctx.currentTime;
+  const dur = durationMs / 1000;
+
+  // Schedule hits that accelerate over time
+  let t = 0;
+  let interval = 0.22; // start slow
+  const minInterval = 0.045; // end fast
+  let vol = 0.25;
+  const hitTimes = [];
+
+  while (t < dur - 0.1) {
+    hitTimes.push(t);
+    // exponential acceleration
+    const progress = t / dur;
+    interval = 0.22 - progress*(0.22-minInterval);
+    vol = 0.25 + progress*0.45;
+    t += interval;
+  }
+
+  hitTimes.forEach(ht => {
+    const progress = ht/dur;
+    const v = 0.25 + progress*0.45;
+    const p = 160 + progress*60;
+    playDrumHit(now+ht, v, p);
+  });
+
+  // Final CRASH cymbal
+  playCrash(now + dur);
+
+  setTimeout(onEnd, durationMs + 200);
+}
+
+function playCrash(time) {
+  const ctx = getAudio();
+  const bufSize = ctx.sampleRate * 0.8;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i=0;i<bufSize;i++) data[i]=(Math.random()*2-1);
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+
+  const hipass = ctx.createBiquadFilter();
+  hipass.type = 'highpass';
+  hipass.frequency.value = 5000;
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.7, time);
+  env.gain.exponentialRampToValueAtTime(0.001, time+0.8);
+
+  src.connect(hipass); hipass.connect(env); env.connect(ctx.destination);
+  src.start(time); src.stop(time+0.8);
+}
+
+function playWinFanfare() {
+  const ctx = getAudio();
+  const now = ctx.currentTime;
+  // Simple ascending notes
+  [261,329,392,523].forEach((freq,i)=>{
+    const osc=ctx.createOscillator();
+    const g=ctx.createGain();
+    osc.type='square';
+    osc.frequency.value=freq;
+    g.gain.setValueAtTime(0,now+i*0.12);
+    g.gain.linearRampToValueAtTime(0.12,now+i*0.12+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,now+i*0.12+0.25);
+    osc.connect(g);g.connect(ctx.destination);
+    osc.start(now+i*0.12);osc.stop(now+i*0.12+0.3);
+  });
+}
+
+function playLoseTone() {
+  const ctx = getAudio();
+  const now = ctx.currentTime;
+  [220,196,165].forEach((freq,i)=>{
+    const osc=ctx.createOscillator();
+    const g=ctx.createGain();
+    osc.type='sawtooth';
+    osc.frequency.value=freq;
+    g.gain.setValueAtTime(0,now+i*0.18);
+    g.gain.linearRampToValueAtTime(0.09,now+i*0.18+0.03);
+    g.gain.exponentialRampToValueAtTime(0.001,now+i*0.18+0.3);
+    osc.connect(g);g.connect(ctx.destination);
+    osc.start(now+i*0.18);osc.stop(now+i*0.18+0.35);
+  });
+}
+
+// ══════════════════════════════════════════
+// DIFFICULTY
+// ══════════════════════════════════════════
+function curDiff() { return Math.min(baseDiff+round,4); }
+
+// ══════════════════════════════════════════
+// PLAYER NAMES
+// ══════════════════════════════════════════
+// Stored per mode so switching modes resets to defaults but custom names persist per mode
+const defaultNames = {
+  pvc: { left: 'YOU', right: 'CPU' },
+  pvp: { left: 'P1',  right: 'P2'  }
+};
+const playerNames = {
+  pvc: { left: 'YOU', right: 'CPU' },
+  pvp: { left: 'P1',  right: 'P2'  }
+};
+
+function getNameL(){ return playerNames[mode].left; }
+function getNameR(){ return playerNames[mode].right; }
+
+function applyNames(){
+  document.getElementById('nameLeft').textContent  = getNameL();
+  document.getElementById('nameRight').textContent = getNameR();
+}
+
+function startEditName(side){
+  const wrap = document.getElementById(side==='left'?'nameWrapLeft':'nameWrapRight');
+  const nameEl = document.getElementById(side==='left'?'nameLeft':'nameRight');
+  const currentName = side==='left' ? getNameL() : getNameR();
+
+  // Replace wrap content with an input
+  wrap.onclick = null; // disable while editing
+  wrap.innerHTML = '';
+  const input = document.createElement('input');
+  input.type='text';
+  input.className='name-input';
+  input.value = currentName;
+  input.maxLength = 10;
+  input.spellcheck = false;
+  wrap.appendChild(input);
+  input.focus();
+  input.select();
+
+  function commit(){
+    const val = input.value.trim().toUpperCase() || (side==='left'? defaultNames[mode].left : defaultNames[mode].right);
+    if(side==='left') playerNames[mode].left  = val;
+    else               playerNames[mode].right = val;
+    // Restore wrap
+    wrap.innerHTML = `<div class="score-who" id="name${side==='left'?'Left':'Right'}">${val}</div><span class="edit-icon">✎</span>`;
+    wrap.onclick = ()=>startEditName(side);
+  }
+
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e=>{
+    if(e.key==='Enter'||e.key==='Escape') input.blur();
+  });
+}
+
+// ══════════════════════════════════════════
+// UI
+// ══════════════════════════════════════════
+function setMode(m){
+  mode=m;
+  document.getElementById('btnPVC').className='mode-btn pvc'+(m==='pvc'?' active':'');
+  document.getElementById('btnPVP').className='mode-btn pvp'+(m==='pvp'?' active':'');
+  document.getElementById('diffSelector').classList.toggle('hidden',m==='pvp');
+  applyNames();
+  fullRestart();
+}
+
+function setBaseDiff(d){
+  baseDiff=d;
+  document.querySelectorAll('.diff-pill').forEach(p=>p.classList.toggle('active',+p.dataset.d===d));
+  fullRestart();
+}
+
+function updateRoundBadge(){
+  const d=curDiff();
+  document.getElementById('roundNum').textContent=round+1;
+  const lbl=document.getElementById('rdiffLabel');
+  lbl.textContent=mode==='pvp'?'ROUND '+(round+1):DIFF_NAMES[d];
+  lbl.style.color=DIFF_COLORS[d];
+  document.getElementById('rdot').style.background=DIFF_COLORS[d];
+}
+
+function setStatus(cls,html){
+  const el=document.getElementById('status');
+  el.className='status '+cls;
+  el.innerHTML=html;
+}
+
+function updateTurnHL(){
+  document.getElementById('sideLeft').classList.toggle('active-turn',turn==='X');
+  document.getElementById('sideRight').classList.toggle('active-turn',turn==='O');
+}
+
+function renderPips(){
+  function make(id,count,cls){
+    const el=document.getElementById(id);
+    el.innerHTML='';
+    // clamp for display: show 0 even if negative
+    const shown=Math.max(0,count);
+    for(let i=0;i<5;i++){
+      const d=document.createElement('div');
+      d.className='pip'+(i<shown?' on '+cls:'');
+      el.appendChild(d);
+    }
+  }
+  make('pipsLeft',scores.x,'x');
+  make('pipsRight',scores.o,'o');
+
+  function bumpNum(id,val,positive){
+    const el=document.getElementById(id);
+    el.textContent=val;
+    el.classList.remove('bump','neg-bump');
+    void el.offsetWidth;
+    el.classList.add(positive?'bump':'neg-bump');
+    setTimeout(()=>el.classList.remove('bump','neg-bump'),400);
+  }
+  bumpNum('numLeft', scores.x, true);
+  bumpNum('numRight',scores.o, true);
+}
+
+// ══════════════════════════════════════════
+// BOARD
+// ══════════════════════════════════════════
+function renderBoard(winCells=[]){
+  const el=document.getElementById('board');
+  el.innerHTML='';
+  board.forEach((v,i)=>{
+    const c=document.createElement('div');
+    c.className='cell'+(v?' taken':'')+(gameOver||thinking?' dead':'');
+    if(winCells.includes(i))c.classList.add('winner-cell');
+    if(v){
+      const s=document.createElement('span');
+      s.className='mk '+v.toLowerCase();
+      s.textContent=v==='X'?'✕':'○';
+      c.appendChild(s);
+    }
+    if(!v&&!gameOver&&!thinking)c.addEventListener('click',()=>handleClick(i));
+    el.appendChild(c);
+  });
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+function initGame(){
+  board=Array(9).fill(null);
+  turn='X';
+  gameOver=false;
+  thinking=false;
+  updateRoundBadge();
+  updateTurnHL();
+  renderBoard();
+  renderPips();
+  applyNames();
+  document.getElementById('btnNext').classList.add('hidden');
+  if(mode==='pvp') setStatus('xt',`${getNameL()}'S TURN &nbsp;<span style="color:var(--x)">✕</span>`);
+  else setStatus('xt','YOUR TURN');
+}
+
+// ══════════════════════════════════════════
+// CLICK
+// ══════════════════════════════════════════
+function handleClick(i){
+  if(gameOver||thinking||board[i])return;
+  if(mode==='pvc'&&turn==='O')return;
+  board[i]=turn;
+  renderBoard();
+  if(!checkResult()){
+    turn=turn==='X'?'O':'X';
+    updateTurnHL();
+    if(mode==='pvp'){
+      setStatus(turn==='X'?'xt':'ot',
+        turn==='X'?`${getNameL()}'S TURN &nbsp;<span style="color:var(--x)">✕</span>`:`${getNameR()}'S TURN &nbsp;<span style="color:var(--o)">○</span>`);
+    } else { aiTurn(); }
+  }
+}
+
+// ══════════════════════════════════════════
+// AI
+// ══════════════════════════════════════════
+function aiTurn(){
+  thinking=true;
+  renderBoard();
+  setStatus('think','CPU THINKING <span class="dots"><span>.</span><span>.</span><span>.</span></span>');
+  const d=curDiff();
+  const delay=THINK_MS[d]+Math.random()*160;
+  setTimeout(()=>{
+    const mv=getAIMove(d);
+    board[mv]='O';
+    thinking=false;
+    turn='X';
+    updateTurnHL();
+    renderBoard();
+    if(!checkResult())setStatus('xt','YOUR TURN');
+  },delay);
+}
+
+function getAIMove(d){
+  const empty=board.map((v,i)=>v===null?i:-1).filter(v=>v>=0);
+  if(!empty.length)return -1;
+  if(d===0){if(Math.random()<.12){const b=findWin('X');if(b!==-1)return b;}return empty[~~(Math.random()*empty.length)];}
+  if(d===1){const w=findWin('O');if(w!==-1)return w;if(Math.random()<.55){const b=findWin('X');if(b!==-1)return b;}return empty[~~(Math.random()*empty.length)];}
+  if(d===2){const w=findWin('O');if(w!==-1)return w;const b=findWin('X');if(b!==-1)return b;if(Math.random()<.25)return empty[~~(Math.random()*empty.length)];return stratMove(empty);}
+  if(d===3){if(Math.random()<.07)return empty[~~(Math.random()*empty.length)];return mmBest(false);}
+  return mmBest(true);
+}
+function findWin(p){for(const line of WIN_LINES){const vs=line.map(i=>board[i]);if(vs.filter(v=>v===p).length===2&&vs.includes(null))return line[vs.indexOf(null)];}return -1;}
+function stratMove(empty){if(board[4]===null)return 4;const c=[0,2,6,8].filter(i=>board[i]===null);if(c.length)return c[~~(Math.random()*c.length)];return empty[~~(Math.random()*empty.length)];}
+function mmBest(perfect){
+  const empty=board.map((v,i)=>v===null?i:-1).filter(v=>v>=0);
+  let best=-Infinity,move=-1;
+  for(const i of empty){board[i]='O';const s=minimax(0,false,-Infinity,Infinity);board[i]=null;if(s>best){best=s;move=i;}}
+  if(!perfect&&Math.random()<.05){const o=empty.filter(i=>i!==move);if(o.length)return o[~~(Math.random()*o.length)];}
+  return move;
+}
+function minimax(depth,isMax,alpha,beta){
+  const w=boardWinner();
+  if(w==='O')return 10-depth;
+  if(w==='X')return depth-10;
+  const empty=board.map((v,i)=>v===null?i:-1).filter(v=>v>=0);
+  if(!empty.length)return 0;
+  if(isMax){let best=-Infinity;for(const i of empty){board[i]='O';best=Math.max(best,minimax(depth+1,false,alpha,beta));board[i]=null;alpha=Math.max(alpha,best);if(beta<=alpha)break;}return best;}
+  else{let best=Infinity;for(const i of empty){board[i]='X';best=Math.min(best,minimax(depth+1,true,alpha,beta));board[i]=null;beta=Math.min(beta,best);if(beta<=alpha)break;}return best;}
+}
+function boardWinner(){for(const[a,b,c]of WIN_LINES)if(board[a]&&board[a]===board[b]&&board[b]===board[c])return board[a];return null;}
+
+// ══════════════════════════════════════════
+// MINUS POINT FLASH
+// ══════════════════════════════════════════
+function showMinusFlash(side){
+  const el=document.getElementById(side==='left'?'sideLeft':'sideRight');
+  const f=document.createElement('div');
+  f.className='minus-flash';
+  f.textContent='-1';
+  el.appendChild(f);
+  setTimeout(()=>f.remove(),1000);
+}
+
+// ══════════════════════════════════════════
+// CHECK RESULT
+// ══════════════════════════════════════════
+function checkResult(){
+  for(const line of WIN_LINES){
+    const[a,b,c]=line;
+    if(board[a]&&board[a]===board[b]&&board[b]===board[c]){
+      const w=board[a];
+      gameOver=true;
+      renderBoard(line);
+
+      if(w==='X'){
+        // X wins: +1 X, -1 O
+        scores.x++;
+        scores.o--;
+        renderPips();
+        showMinusFlash('right');
+        const lbl=mode==='pvp'?`🏆 ${getNameL()} WINS!`:'🏆 YOU WIN!';
+        setStatus('res xwin',lbl);
+        glow('left','win');glow('right','lose');
+        spawnParticles('x','lose');
+      } else {
+        // O wins: +1 O, -1 X
+        scores.o++;
+        scores.x--;
+        renderPips();
+        showMinusFlash('left');
+        const lbl=mode==='pvp'?`🏆 ${getNameR()} WINS!`:'💀 CPU WINS';
+        setStatus('res owin',lbl);
+        glow('right','win');glow('left','lose');
+        spawnParticles('o','lose');
+      }
+
+      const done=scores.x>=3||scores.o>=3||round>=4;
+      setTimeout(()=>done?showSeriesEnd():showNextBtn(),800);
+      return true;
+    }
+  }
+  if(board.every(v=>v)){
+    gameOver=true;
+    setStatus('res draw','🤝 DRAW');
+    const done=round>=4;
+    setTimeout(()=>done?showSeriesEnd():showNextBtn(),800);
+    return true;
+  }
+  return false;
+}
+
+function glow(side,type){
+  const el=document.getElementById(side==='left'?'sideLeft':'sideRight');
+  el.classList.remove('glow-win','glow-lose');
+  void el.offsetWidth;
+  el.classList.add('glow-'+type);
+  setTimeout(()=>el.classList.remove('glow-win','glow-lose'),900);
+}
+
+function showNextBtn(){ document.getElementById('btnNext').classList.remove('hidden'); }
+
+function nextRound(){ if(round<4)round++; initGame(); }
+
+function fullRestart(){
+  scores={x:0,o:0};
+  round=0;
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('particleLayer').innerHTML='';
+  document.getElementById('ovParticles').innerHTML='';
+  initGame();
+}
+
+// ══════════════════════════════════════════
+// SERIES END  ← drumroll → reveal
+// ══════════════════════════════════════════
+function showSeriesEnd(){
+  // reset overlay elements
+  const title   = document.getElementById('ovTitle');
+  const sub     = document.getElementById('ovSub');
+  const emoji   = document.getElementById('ovEmoji');
+  const scoreEl = document.getElementById('ovScore');
+  const labelsEl= document.getElementById('ovScoreLabels');
+  const btn     = document.getElementById('ovBtn');
+  const dBar    = document.getElementById('drumrollBar');
+  const dTxt    = document.getElementById('drumrollTxt');
+  const ovScX   = document.getElementById('ovScoreX');
+  const ovScO   = document.getElementById('ovScoreO');
+
+  // hide reveal elements
+  [title,sub,scoreEl,labelsEl,btn].forEach(e=>e.classList.remove('visible'));
+  emoji.textContent='🥁';
+  emoji.style.animation='none';
+  void emoji.offsetWidth;
+  emoji.style.animation='';
+  dTxt.classList.add('visible');
+  dTxt.textContent='🥁 DRUMROLL...';
+  dBar.style.transition='none';
+  dBar.style.width='0%';
+
+  // show overlay first
+  document.getElementById('overlay').classList.add('show');
+
+  // start drumroll bar animation
+  setTimeout(()=>{
+    dBar.style.transition=`width ${DRUMROLL_MS}ms linear`;
+    dBar.style.width='100%';
+  },50);
+
+  // play drumroll sound
+  playDrumroll(DRUMROLL_MS, ()=>{
+    // REVEAL
+    dTxt.classList.remove('visible');
+
+    // determine winner
+    let winnerSide, loserSide;
+    if(scores.x>scores.o){
+      emoji.textContent='🏆';
+      title.textContent=`${getNameL()} WINS!`;
+      title.className='ov-title xc';
+      sub.textContent='SERIES COMPLETE';
+      winnerSide='x'; loserSide='o';
+      playWinFanfare();
+    } else if(scores.o>scores.x){
+      emoji.textContent=mode==='pvp'?'🏆':'💀';
+      title.textContent=`${getNameR()} WINS${mode==='pvp'?'!':''}`;
+      title.className='ov-title oc';
+      sub.textContent='SERIES COMPLETE';
+      winnerSide='o'; loserSide='x';
+      if(mode==='pvp') playWinFanfare(); else playLoseTone();
+    } else {
+      emoji.textContent='🤝';
+      title.textContent="IT'S A TIE";
+      title.className='ov-title dc';
+      sub.textContent='EVENLY MATCHED';
+      winnerSide=null;
+    }
+
+    // set score numbers
+    ovScX.textContent=scores.x;
+    ovScO.textContent=scores.o;
+    document.getElementById('ovLabelL').textContent=getNameL();
+    document.getElementById('ovLabelR').textContent=getNameR();
+
+    // show elements with stagger
+    setTimeout(()=>title.classList.add('visible'),50);
+    setTimeout(()=>sub.classList.add('visible'),150);
+    setTimeout(()=>{ labelsEl.classList.add('visible'); scoreEl.classList.add('visible'); },250);
+    setTimeout(()=>btn.classList.add('visible'),400);
+
+    // overlay particles
+    if(winnerSide) spawnOverlayParticles(winnerSide, loserSide);
+  });
+}
+
+// ══════════════════════════════════════════
+// WORLD PARTICLES (round wins)
+// ══════════════════════════════════════════
+function spawnParticles(winnerSide, loserReaction){
+  const layer=document.getElementById('particleLayer');
+  Array.from(layer.querySelectorAll('[data-temp]')).forEach(c=>c.remove());
+
+  const isX=winnerSide==='x';
+  const winL=isX?2:52,winR=isX?48:98;
+  const loseL=isX?52:2,loseR=isX?98:48;
+  const xCols=['#ff2d55','#ff6b7a','#ff9500','#ffd700','#fff','#ffaaaa'];
+  const oCols=['#00aaff','#00e5ff','#7df9ff','#ffd700','#fff','#aaddff'];
+  const confCols=isX?xCols:oCols;
+
+  for(let i=0;i<70;i++){
+    const p=document.createElement('div');
+    p.className='p-item';p.dataset.temp='1';
+    p.style.left=(winL+Math.random()*(winR-winL))+'vw';
+    p.style.animationDuration=(1.5+Math.random()*2.8)+'s';
+    p.style.animationDelay=(Math.random()*.9)+'s';
+    const sq=document.createElement('div');
+    sq.style.width=(6+Math.random()*9)+'px';sq.style.height=sq.style.width;
+    sq.style.background=confCols[~~(Math.random()*confCols.length)];
+    sq.style.borderRadius=Math.random()>.45?'50%':'3px';
+    p.appendChild(sq);layer.appendChild(p);
+  }
+  const stars=['🌟','✨','🎉','🎊','⭐'];
+  for(let i=0;i<16;i++){
+    const p=document.createElement('div');
+    p.className='p-item';p.dataset.temp='1';
+    p.style.left=(winL+Math.random()*(winR-winL))+'vw';
+    p.style.animationDuration=(1.8+Math.random()*2.2)+'s';
+    p.style.animationDelay=(Math.random()*1.2)+'s';
+    p.style.fontSize=(18+Math.random()*14)+'px';
+    p.textContent=stars[~~(Math.random()*stars.length)];
+    layer.appendChild(p);
+  }
+  for(let i=0;i<30;i++){
+    const p=document.createElement('div');
+    p.className='p-item';p.dataset.temp='1';
+    p.style.left=(loseL+Math.random()*(loseR-loseL))+'vw';
+    p.style.animationDuration=(1.6+Math.random()*2.2)+'s';
+    p.style.animationDelay=(Math.random()*1)+'s';
+    p.style.fontSize=(18+Math.random()*16)+'px';
+    p.textContent='💔';layer.appendChild(p);
+  }
+  for(let i=0;i<10;i++){
+    const p=document.createElement('div');
+    p.className='p-item';p.dataset.temp='1';
+    p.style.left=(loseL+Math.random()*(loseR-loseL))+'vw';
+    p.style.animationDuration=(2+Math.random()*2)+'s';
+    p.style.animationDelay=(Math.random()*1.2)+'s';
+    p.style.fontSize=(16+Math.random()*12)+'px';
+    p.textContent='😢';layer.appendChild(p);
+  }
+  setTimeout(()=>Array.from(layer.querySelectorAll('[data-temp]')).forEach(c=>c.remove()),6500);
+}
+
+// ══════════════════════════════════════════
+// OVERLAY PARTICLES (series end)
+// ══════════════════════════════════════════
+function spawnOverlayParticles(winnerSide, loserSide){
+  const layer=document.getElementById('ovParticles');
+  layer.innerHTML='';
+
+  const isX=winnerSide==='x';
+  // Winner = left half of card, loser = right half
+  const winL=isX?0:50, winR=isX?50:100;
+  const loseL=isX?50:0, loseR=isX?100:50;
+
+  const xCols=['#ff2d55','#ff6b7a','#ff9500','#ffd700','#fff'];
+  const oCols=['#00aaff','#00e5ff','#7df9ff','#ffd700','#fff'];
+  const confCols=isX?xCols:oCols;
+
+  // confetti on winner side
+  for(let i=0;i<60;i++){
+    const p=document.createElement('div');
+    p.className='ov-p';
+    p.style.left=(winL+Math.random()*(winR-winL))+'%';
+    p.style.animationDuration=(1.4+Math.random()*2.4)+'s';
+    p.style.animationDelay=(Math.random()*.8)+'s';
+    const sq=document.createElement('div');
+    sq.style.width=(5+Math.random()*8)+'px';sq.style.height=sq.style.width;
+    sq.style.background=confCols[~~(Math.random()*confCols.length)];
+    sq.style.borderRadius=Math.random()>.45?'50%':'2px';
+    p.appendChild(sq);layer.appendChild(p);
+  }
+  const stars=['🌟','✨','🎉','🎊','⭐','💫'];
+  for(let i=0;i<14;i++){
+    const p=document.createElement('div');
+    p.className='ov-p';
+    p.style.left=(winL+Math.random()*(winR-winL))+'%';
+    p.style.animationDuration=(1.6+Math.random()*2)+'s';
+    p.style.animationDelay=(Math.random()*1)+'s';
+    p.style.fontSize=(16+Math.random()*14)+'px';
+    p.textContent=stars[~~(Math.random()*stars.length)];
+    layer.appendChild(p);
+  }
+
+  // broken hearts on loser side
+  for(let i=0;i<25;i++){
+    const p=document.createElement('div');
+    p.className='ov-p';
+    p.style.left=(loseL+Math.random()*(loseR-loseL))+'%';
+    p.style.animationDuration=(1.5+Math.random()*2)+'s';
+    p.style.animationDelay=(Math.random()*.9)+'s';
+    p.style.fontSize=(16+Math.random()*16)+'px';
+    p.textContent='💔';layer.appendChild(p);
+  }
+  for(let i=0;i<8;i++){
+    const p=document.createElement('div');
+    p.className='ov-p';
+    p.style.left=(loseL+Math.random()*(loseR-loseL))+'%';
+    p.style.animationDuration=(1.8+Math.random()*2)+'s';
+    p.style.animationDelay=(Math.random()*1.2)+'s';
+    p.style.fontSize=(14+Math.random()*12)+'px';
+    p.textContent='😢';layer.appendChild(p);
+  }
+}
+
+// ══════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════
+initGame();
+</script>
+</body>
+</html>
