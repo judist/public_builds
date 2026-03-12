@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🦆 Duck Revive: Mission 1</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', serif;
+      background: linear-gradient(135deg, #0a1628 0%, #1a2f4e 40%, #0d2137 100%);
+      min-height: 100vh; display: flex; flex-direction: column;
+      overflow: hidden; position: relative;
+    }
+    #stars-bg { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
+    .star { position:absolute; background:white; border-radius:50%; animation:twinkle var(--dur) infinite alternate; }
+
+    @keyframes twinkle  { from{opacity:0.2} to{opacity:0.9} }
+    @keyframes floatUp  { from{opacity:1;transform:translateY(0) scale(1)} to{opacity:0;transform:translateY(-65px) scale(1.4)} }
+    @keyframes popIn    { from{transform:scale(0.5) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+    @keyframes slideIn  { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+    @keyframes pulse    { 0%,100%{box-shadow:0 0 15px #f4c542} 50%{box-shadow:0 0 35px #f4c542,0 0 60px #f4a000} }
+
+    /* ── Top bar ── */
+    #topbar {
+      position:relative; z-index:10; background:rgba(0,0,0,0.4);
+      backdrop-filter:blur(10px); border-bottom:1px solid rgba(244,197,66,0.3);
+      padding:12px 24px; display:flex; align-items:center; gap:32px;
+    }
+    .stat-group { display:flex; align-items:center; gap:10px; }
+    .stat-val   { font-size:1.3rem; font-weight:bold; line-height:1; }
+    .stat-label { color:rgba(255,255,255,0.5); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; }
+    #ducks-val  { color:#f4c542; }
+    #dps-val    { color:#7ee8a2; }
+    #eggs-val   { color:#e8b4f0; }
+    .divider    { width:1px; height:36px; background:rgba(244,197,66,0.2); }
+    #game-title { margin-left:auto; color:rgba(255,255,255,0.3); font-size:0.8rem; font-style:italic; }
+
+    /* ── Main ── */
+    #main { display:flex; flex:1; position:relative; z-index:1; height:calc(100vh - 65px); overflow:hidden; }
+
+    /* ── Duck area ── */
+    #duck-area { flex:1; display:flex; align-items:center; justify-content:center; padding-left:0; position:relative; overflow:hidden; }
+    #glow-ring {
+      position:absolute; width:260px; height:260px; border-radius:50%;
+      background:radial-gradient(circle,rgba(244,197,66,0.08) 0%,transparent 70%);
+      animation:pulse 3s infinite; pointer-events:none;
+    }
+    #duck-wrap {
+      position:relative; cursor:pointer; user-select:none;
+      width:220px; height:220px; display:flex; align-items:center; justify-content:center;
+    }
+    #duck-spinner {
+      position:relative; width:180px; height:180px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    #duck-canvas { display:block; }
+    #click-hint {
+      position:absolute; bottom:4%;
+      color:rgba(255,255,255,0.3); font-size:0.75rem;
+      letter-spacing:0.2em; text-transform:uppercase; pointer-events:none;
+    }
+    .acc-overlay {
+      position:absolute; pointer-events:none;
+      left:50%; transform:translateX(-50%); line-height:1;
+    }
+    .floater {
+      position:absolute; color:#f4c542; font-size:1.1rem; font-weight:bold;
+      pointer-events:none; animation:floatUp 0.9s ease-out forwards;
+      z-index:20; top:-25px; white-space:nowrap;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width:300px; background:rgba(0,0,0,0.45); backdrop-filter:blur(12px);
+      border-left:1px solid rgba(244,197,66,0.2);
+      display:flex; flex-direction:column; padding:20px 16px; gap:14px;
+      overflow-y:auto;
+      height:calc(100vh - 65px);
+      flex-shrink:0;
+    }
+    #sidebar::-webkit-scrollbar { width:5px; }
+    #sidebar::-webkit-scrollbar-track { background:rgba(255,255,255,0.03); }
+    #sidebar::-webkit-scrollbar-thumb { background:rgba(244,197,66,0.3); border-radius:3px; }
+    #sidebar::-webkit-scrollbar-thumb:hover { background:rgba(244,197,66,0.6); }
+    #shop-title {
+      color:#f4c542; font-size:0.7rem; letter-spacing:0.3em; text-transform:uppercase;
+      text-align:center; padding-bottom:8px; border-bottom:1px solid rgba(244,197,66,0.15);
+    }
+    #egg-card {
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px; padding:14px; transition:border-color 0.2s;
+    }
+    #egg-card.afford { border-color:rgba(244,197,66,0.4); }
+    .egg-card-top { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .egg-icon { font-size:2rem; }
+    .egg-name { color:white; font-weight:bold; font-size:0.95rem; }
+    .egg-sub  { color:rgba(255,255,255,0.5); font-size:0.72rem; }
+    #egg-cost-label { color:#f4c542; font-size:0.8rem; margin-bottom:10px; display:block; }
+    .buy-row  { display:flex; gap:6px; }
+    .buy-btn {
+      flex:1; padding:9px 4px; border-radius:8px; border:none;
+      font-weight:bold; font-size:0.8rem; cursor:not-allowed;
+      background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.2);
+      transition:all 0.2s;
+    }
+    .buy-btn.on {
+      background:linear-gradient(135deg,#f4c542,#e8950a);
+      color:#0a1628; cursor:pointer;
+    }
+    .buy-btn.on:active { transform:scale(0.95); }
+
+    /* Duckling card — teal tint */
+    #duckling-card {
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px; padding:14px; transition:border-color 0.2s;
+    }
+    #duckling-card.afford { border-color:rgba(100,220,200,0.5); }
+    #duckling-card .item-cost { color:#64dcc8; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckling-card .buy-btn.on { background:linear-gradient(135deg,#64dcc8,#1a9e8a); color:#0a1628; }
+
+    /* Kid Duck card — purple tint */
+    #kidduck-card {
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px; padding:14px; transition:border-color 0.2s;
+    }
+    #kidduck-card.afford { border-color:rgba(180,120,255,0.5); }
+    #kidduck-card .item-cost { color:#b478ff; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #kidduck-card .buy-btn.on { background:linear-gradient(135deg,#b478ff,#7c3aed); color:#fff; }
+
+    .owned-count { color:rgba(255,255,255,0.35); font-size:0.7rem; margin-top:3px; }
+
+    /* Goose — orange-red */
+    #goose-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #goose-card.afford { border-color:rgba(255,140,50,0.55); }
+    #goose-card .item-cost { color:#ff8c32; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #goose-card .buy-btn.on { background:linear-gradient(135deg,#ff8c32,#c0460a); color:#fff; }
+
+    /* Dragon Duck — fiery red */
+    #dragonduck-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #dragonduck-card.afford { border-color:rgba(255,60,60,0.55); }
+    #dragonduck-card .item-cost { color:#ff4444; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #dragonduck-card .buy-btn.on { background:linear-gradient(135deg,#ff4444,#8b0000); color:#fff; }
+
+    /* Duck Pond — blue */
+    #duckpond-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckpond-card.afford { border-color:rgba(50,180,255,0.55); }
+    #duckpond-card .item-cost { color:#32b4ff; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckpond-card .buy-btn.on { background:linear-gradient(135deg,#32b4ff,#0055aa); color:#fff; }
+
+    /* Duck Factory — grey-green */
+    #duckfactory-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckfactory-card.afford { border-color:rgba(120,200,120,0.55); }
+    #duckfactory-card .item-cost { color:#78c878; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckfactory-card .buy-btn.on { background:linear-gradient(135deg,#78c878,#2d6a2d); color:#fff; }
+
+    /* Golden Duck — shiny gold (one-time) */
+    #goldenduck-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #goldenduck-card.afford { border-color:rgba(255,215,0,0.7); box-shadow:0 0 12px rgba(255,215,0,0.15); }
+    #goldenduck-card .item-cost { color:#ffd700; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #goldenduck-card .buy-btn.on { background:linear-gradient(135deg,#ffd700,#b8860b); color:#0a1628; }
+    .one-time-badge { display:inline-block; background:rgba(255,215,0,0.15); border:1px solid rgba(255,215,0,0.3); border-radius:4px; color:#ffd700; font-size:0.62rem; padding:1px 5px; margin-left:6px; vertical-align:middle; }
+
+    /* Duck Lab — cyan science */
+    #ducklab-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #ducklab-card.afford { border-color:rgba(0,230,200,0.55); }
+    #ducklab-card .item-cost { color:#00e6c8; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #ducklab-card .buy-btn.on { background:linear-gradient(135deg,#00e6c8,#007a6a); color:#fff; }
+
+    /* Duck Band — pink */
+    #duckband-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckband-card.afford { border-color:rgba(255,100,200,0.55); }
+    #duckband-card .item-cost { color:#ff64c8; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckband-card .buy-btn.on { background:linear-gradient(135deg,#ff64c8,#8b005a); color:#fff; }
+
+    /* Duck Tsunami — deep blue one-time */
+    #ducktsunami-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #ducktsunami-card.afford { border-color:rgba(30,100,255,0.65); box-shadow:0 0 12px rgba(30,100,255,0.15); }
+    #ducktsunami-card .item-cost { color:#3c6eff; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #ducktsunami-card .buy-btn.on { background:linear-gradient(135deg,#3c6eff,#000e7a); color:#fff; }
+
+    /* Duck Chef — warm amber */
+    #duckchef-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckchef-card.afford { border-color:rgba(255,180,40,0.55); }
+    #duckchef-card .item-cost { color:#ffb428; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckchef-card .buy-btn.on { background:linear-gradient(135deg,#ffb428,#7a4d00); color:#fff; }
+
+    .section-label { color:rgba(244,197,66,0.5); font-size:0.62rem; letter-spacing:0.25em; text-transform:uppercase; padding:4px 0 2px; border-bottom:1px solid rgba(244,197,66,0.08); margin-bottom:2px; }
+
+    /* Duck Wizard — violet */
+    #duckwizard-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckwizard-card.afford { border-color:rgba(190,100,255,0.55); }
+    #duckwizard-card .item-cost { color:#be64ff; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckwizard-card .buy-btn.on { background:linear-gradient(135deg,#be64ff,#5a0099); color:#fff; }
+
+    /* Duck Astronaut — silver-blue */
+    #duckastronaut-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckastronaut-card.afford { border-color:rgba(160,210,255,0.55); }
+    #duckastronaut-card .item-cost { color:#a0d2ff; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckastronaut-card .buy-btn.on { background:linear-gradient(135deg,#a0d2ff,#003366); color:#fff; }
+
+    /* Duck Castle — gold-brown */
+    #duckcastle-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckcastle-card.afford { border-color:rgba(220,180,80,0.55); }
+    #duckcastle-card .item-cost { color:#dcb450; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckcastle-card .buy-btn.on { background:linear-gradient(135deg,#dcb450,#6b4400); color:#fff; }
+
+    /* Duck Planet — deep space purple */
+    #duckplanet-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckplanet-card.afford { border-color:rgba(100,60,200,0.65); box-shadow:0 0 12px rgba(100,60,200,0.12); }
+    #duckplanet-card .item-cost { color:#7c50e0; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckplanet-card .buy-btn.on { background:linear-gradient(135deg,#7c50e0,#1a004a); color:#fff; }
+
+    /* Duck Generator — electric yellow */
+    #duckgenerator-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckgenerator-card.afford { border-color:rgba(255,230,50,0.55); }
+    #duckgenerator-card .item-cost { color:#ffe632; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckgenerator-card .buy-btn.on { background:linear-gradient(135deg,#ffe632,#7a6000); color:#0a1628; }
+
+    /* Duck Gamble — red/green casino */
+    #duckgamble-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckgamble-card.afford { border-color:rgba(50,200,80,0.55); }
+    #duckgamble-card .item-cost { color:#32c850; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckgamble-card .buy-btn.on { background:linear-gradient(135deg,#32c850,#004a14); color:#fff; }
+    #gamble-result { font-size:0.75rem; margin-top:6px; min-height:16px; text-align:center; font-style:italic; }
+
+    /* Duck Hatchery — warm orange */
+    #duckhatchery-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckhatchery-card.afford { border-color:rgba(255,160,60,0.55); }
+    #duckhatchery-card .item-cost { color:#ffa03c; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckhatchery-card .buy-btn.on { background:linear-gradient(135deg,#ffa03c,#7a3a00); color:#fff; }
+
+    /* Duck Navy — navy blue */
+    #ducknavy-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #ducknavy-card.afford { border-color:rgba(60,100,255,0.55); }
+    #ducknavy-card .item-cost { color:#3c64ff; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #ducknavy-card .buy-btn.on { background:linear-gradient(135deg,#3c64ff,#00007a); color:#fff; }
+
+    /* Duck University — deep teal */
+    #duckuniversity-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckuniversity-card.afford { border-color:rgba(30,200,180,0.55); }
+    #duckuniversity-card .item-cost { color:#1ec8b4; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckuniversity-card .buy-btn.on { background:linear-gradient(135deg,#1ec8b4,#003d38); color:#fff; }
+
+    /* Duck Galaxy — deep space */
+    #duckgalaxy-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckgalaxy-card.afford { border-color:rgba(140,80,255,0.65); box-shadow:0 0 14px rgba(140,80,255,0.1); }
+    #duckgalaxy-card .item-cost { color:#8c50ff; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckgalaxy-card .buy-btn.on { background:linear-gradient(135deg,#8c50ff,#1a004a); color:#fff; }
+
+    /* Duck Time Machine — gold shimmer one-time */
+    #ducktimemachine-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #ducktimemachine-card.afford { border-color:rgba(255,220,80,0.7); box-shadow:0 0 14px rgba(255,220,80,0.12); }
+    #ducktimemachine-card .item-cost { color:#ffdc50; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #ducktimemachine-card .buy-btn.on { background:linear-gradient(135deg,#ffdc50,#7a5c00); color:#0a1628; }
+
+    /* Duck Vaccine (one-time) — medical green */
+    #duckvaccine-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckvaccine-card.afford { border-color:rgba(80,230,120,0.6); }
+    #duckvaccine-card .item-cost { color:#50e678; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckvaccine-card .buy-btn.on { background:linear-gradient(135deg,#50e678,#00521e); color:#fff; }
+
+    /* Duck Multiverse — rainbow */
+    #duckmultiverse-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckmultiverse-card.afford { border-color:rgba(255,100,200,0.65); box-shadow:0 0 16px rgba(255,100,200,0.12); }
+    #duckmultiverse-card .item-cost { color:#ff64c8; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckmultiverse-card .buy-btn.on { background:linear-gradient(135deg,#ff64c8,#6400a0,#3c6eff); color:#fff; }
+
+    /* Duck God (one-time) — divine gold */
+    #duckgod-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; transition:border-color 0.2s; }
+    #duckgod-card.afford { border-color:rgba(255,240,100,0.8); box-shadow:0 0 24px rgba(255,240,100,0.2); }
+    #duckgod-card .item-cost { color:#fff064; font-size:0.8rem; margin-bottom:10px; display:block; }
+    #duckgod-card .buy-btn.on { background:linear-gradient(135deg,#fff064,#ff9900,#ff3300); color:#0a1628; }
+
+    .sidebar-divider { border-top:1px solid rgba(244,197,66,0.1); }
+
+    #ach-btn {
+      background:rgba(244,197,66,0.1); border:1px solid rgba(244,197,66,0.3);
+      border-radius:10px; color:#f4c542; padding:12px; cursor:pointer;
+      font-size:0.88rem; font-weight:bold; letter-spacing:0.08em; text-transform:uppercase;
+      transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    #ach-btn:hover { background:rgba(244,197,66,0.25); }
+    #ach-badge {
+      background:#f4c542; color:#0a1628; border-radius:50%;
+      width:20px; height:20px; font-size:0.7rem;
+      display:flex; align-items:center; justify-content:center; font-weight:bold;
+    }
+
+    #save-btn {
+      background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15);
+      border-radius:10px; color:rgba(255,255,255,0.65); padding:11px; cursor:pointer;
+      font-size:0.82rem; font-weight:bold; letter-spacing:0.08em; text-transform:uppercase;
+      transition:all 0.3s; display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    #save-btn:hover  { background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.3); }
+    #save-btn.saved  { background:rgba(76,175,80,0.2); border-color:rgba(76,175,80,0.5); color:#a5d6a7; }
+
+    #restart-btn {
+      background:rgba(220,50,50,0.08); border:1px solid rgba(220,80,80,0.3);
+      border-radius:10px; color:rgba(220,100,100,0.8); padding:11px; cursor:pointer;
+      font-size:0.82rem; font-weight:bold; letter-spacing:0.08em; text-transform:uppercase;
+      transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    #restart-btn:hover { background:rgba(220,50,50,0.2); border-color:rgba(220,80,80,0.6); color:#ff8080; }
+
+    /* Confirm dialog */
+    #confirm-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.75); backdrop-filter:blur(6px);
+      z-index:200; align-items:center; justify-content:center;
+    }
+    #confirm-overlay.show { display:flex; }
+    #confirm-box {
+      background:linear-gradient(135deg,#1a0a0a,#2f0f0f);
+      border:1px solid rgba(220,80,80,0.5); border-radius:18px;
+      padding:32px 28px; width:340px; max-width:90vw; text-align:center;
+      animation:popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+      box-shadow:0 0 40px rgba(220,50,50,0.2);
+    }
+    #confirm-box .confirm-icon { font-size:3rem; margin-bottom:12px; }
+    #confirm-box h3 { color:#ff8080; font-size:1.1rem; margin-bottom:8px; }
+    #confirm-box p  { color:rgba(255,255,255,0.5); font-size:0.82rem; line-height:1.6; margin-bottom:22px; }
+    .confirm-btns   { display:flex; gap:10px; }
+    #confirm-yes {
+      flex:1; padding:11px; border-radius:9px; border:none;
+      background:linear-gradient(135deg,#c0392b,#922b21);
+      color:white; font-weight:bold; font-size:0.88rem; cursor:pointer; transition:all 0.2s;
+    }
+    #confirm-yes:hover { background:linear-gradient(135deg,#e74c3c,#c0392b); }
+    #confirm-no {
+      flex:1; padding:11px; border-radius:9px; border:1px solid rgba(255,255,255,0.15);
+      background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.6);
+      font-weight:bold; font-size:0.88rem; cursor:pointer; transition:all 0.2s;
+    }
+    #confirm-no:hover { background:rgba(255,255,255,0.12); }
+
+    #stats-box {
+      background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+      border-radius:10px; padding:12px;
+    }
+    .stats-title { color:rgba(255,255,255,0.4); font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; margin-bottom:8px; }
+    .stats-body  { color:rgba(255,255,255,0.6); font-size:0.75rem; line-height:2.1; }
+
+    /* ── Achievement popup ── */
+    #ach-popup {
+      display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+      background:linear-gradient(135deg,#1a2f4e,#0d2137); border:1px solid #f4c542;
+      border-radius:14px; padding:16px 24px; align-items:center; gap:14px;
+      z-index:100; box-shadow:0 0 30px rgba(244,197,66,0.3);
+    }
+    #ach-popup.show { display:flex; animation:popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275); }
+    #popup-title  { color:#f4c542; font-weight:bold; font-size:0.95rem; }
+    #popup-name   { color:white; font-size:0.85rem; }
+    #popup-reward { color:rgba(255,255,255,0.5); font-size:0.75rem; }
+
+    /* ── Modal ── */
+    #modal-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.7); backdrop-filter:blur(6px);
+      z-index:50; align-items:center; justify-content:center;
+    }
+    #modal-overlay.show { display:flex; }
+    #modal {
+      background:linear-gradient(135deg,#0f1f35,#1a2f4e);
+      border:1px solid rgba(244,197,66,0.4); border-radius:20px;
+      padding:28px; width:420px; max-width:90vw;
+      animation:slideIn 0.3s ease; box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    }
+    #modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    #modal-header h2 { color:#f4c542; font-size:1.2rem; letter-spacing:0.1em; }
+    #close-modal { background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; font-size:1.2rem; }
+    #ach-list { display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow-y:auto; }
+    .ach-item {
+      background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+      border-radius:10px; padding:12px 14px;
+      display:flex; align-items:center; gap:12px; opacity:0.42; transition:all 0.2s;
+    }
+    .ach-item.unlocked { background:rgba(244,197,66,0.08); border-color:rgba(244,197,66,0.35); opacity:1; }
+    .ach-item-icon   { font-size:1.6rem; }
+    .ach-item-body   { flex:1; }
+    .ach-item-name   { font-weight:bold; font-size:0.85rem; color:rgba(255,255,255,0.4); }
+    .ach-item.unlocked .ach-item-name { color:#f4c542; }
+    .ach-item-desc   { color:rgba(255,255,255,0.4); font-size:0.73rem; }
+    .ach-item-reward { color:#e8b4f0; font-size:0.73rem; margin-top:2px; }
+    .equip-btn {
+      background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+      border-radius:6px; color:rgba(255,255,255,0.5);
+      padding:5px 10px; cursor:pointer; font-size:0.72rem; font-weight:bold;
+      letter-spacing:0.05em; transition:all 0.2s; white-space:nowrap;
+    }
+    .equip-btn.equipped { background:rgba(244,197,66,0.3); border-color:rgba(244,197,66,0.6); color:#f4c542; }
+    .lock-icon { color:rgba(255,255,255,0.2); font-size:1.2rem; }
+
+    /* ── Intro Screen ── */
+    #intro-overlay {
+      position:fixed; inset:0; z-index:999;
+      background:linear-gradient(160deg,#040d1a 0%,#0a1a2e 50%,#071220 100%);
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+    }
+    #intro-box {
+      max-width:640px; width:100%;
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(244,197,66,0.25);
+      border-radius:20px; padding:40px 44px;
+      box-shadow:0 0 60px rgba(244,197,66,0.07);
+      animation:popIn 0.6s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    #intro-date {
+      color:rgba(244,197,66,0.45); font-size:0.7rem;
+      letter-spacing:0.25em; text-transform:uppercase; margin-bottom:18px;
+    }
+    #intro-duck-icon { font-size:3.6rem; margin-bottom:16px; display:block; }
+    #intro-box h1 {
+      color:#f4c542; font-size:1.55rem; margin-bottom:6px;
+      line-height:1.25; letter-spacing:0.02em;
+    }
+    #intro-box h2 {
+      color:rgba(255,255,255,0.35); font-size:0.8rem; font-weight:normal;
+      letter-spacing:0.15em; text-transform:uppercase; margin-bottom:28px;
+    }
+    #intro-story {
+      color:rgba(255,255,255,0.72); font-size:0.92rem; line-height:1.85;
+      border-left:3px solid rgba(244,197,66,0.3); padding-left:18px;
+      margin-bottom:28px;
+    }
+    #intro-story p { margin-bottom:14px; }
+    #intro-story p:last-child { margin-bottom:0; }
+    #intro-story strong { color:#f4c542; }
+    #intro-mission {
+      background:rgba(244,197,66,0.07); border:1px solid rgba(244,197,66,0.2);
+      border-radius:10px; padding:14px 18px; margin-bottom:28px;
+      color:rgba(255,255,255,0.65); font-size:0.85rem; line-height:1.7;
+    }
+    #intro-mission span { color:#7ee8a2; font-weight:bold; }
+    #intro-start {
+      width:100%; padding:14px; border-radius:12px; border:none; cursor:pointer;
+      background:linear-gradient(135deg,#f4c542,#e8950a);
+      color:#0a1628; font-size:1rem; font-weight:bold;
+      letter-spacing:0.1em; text-transform:uppercase;
+      transition:all 0.2s; box-shadow:0 4px 20px rgba(244,197,66,0.25);
+    }
+    #intro-start:hover { transform:translateY(-2px); box-shadow:0 6px 28px rgba(244,197,66,0.4); }
+    #intro-start:active { transform:translateY(0); }
+
+    /* ── Event Timer Bar ── */
+    #event-timer-group { display:flex; align-items:center; gap:10px; }
+    #event-timer-val { font-size:1.1rem; font-weight:bold; color:#ff7070; line-height:1; }
+    #event-timer-val.safe { color:#7ee8a2; }
+    #event-timer-bar {
+      width:80px; height:6px; background:rgba(255,255,255,0.1);
+      border-radius:3px; overflow:hidden; margin-top:4px;
+    }
+    #event-timer-fill {
+      height:100%; background:#ff7070; border-radius:3px;
+      transition:width 1s linear;
+    }
+    #event-timer-fill.safe { background:#7ee8a2; }
+
+    /* ── Event Alert Popup ── */
+    #event-popup {
+      display:none; position:fixed; top:80px; left:50%; transform:translateX(-50%);
+      z-index:300; min-width:340px; max-width:90vw;
+      border-radius:16px; padding:20px 28px;
+      text-align:center; box-shadow:0 0 50px rgba(0,0,0,0.5);
+      animation:popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    #event-popup.show { display:block; }
+    #event-popup.wolf { background:linear-gradient(135deg,#1a0a00,#3d1500); border:1px solid rgba(255,100,20,0.6); }
+    #event-popup.disease { background:linear-gradient(135deg,#0a1a00,#1a3d00); border:1px solid rgba(80,200,50,0.6); }
+    #event-popup.safe-event { background:linear-gradient(135deg,#001a1a,#003d3d); border:1px solid rgba(50,200,200,0.6); }
+    #event-popup.heart { background:linear-gradient(135deg,#1a001a,#3d003d); border:1px solid rgba(255,100,255,0.6); }
+    #event-icon { font-size:2.8rem; margin-bottom:8px; }
+    #event-title { font-size:1.1rem; font-weight:bold; color:white; margin-bottom:4px; }
+    #event-desc { font-size:0.82rem; color:rgba(255,255,255,0.65); line-height:1.5; }
+
+    /* Heart of the Duck indicator */
+    #heart-indicator {
+      display:none; position:fixed; bottom:24px; right:24px; z-index:200;
+      background:linear-gradient(135deg,#2d003d,#5a006b);
+      border:1px solid rgba(255,100,255,0.5); border-radius:12px;
+      padding:10px 16px; color:#ff80ff; font-size:0.8rem; font-weight:bold;
+      box-shadow:0 0 20px rgba(255,100,255,0.2);
+    }
+    #heart-indicator.show { display:flex; align-items:center; gap:8px; }
+
+    /* ── Win Screen ── */
+    #win-screen {
+      display:none; position:fixed; inset:0; z-index:500;
+      background:linear-gradient(135deg,#0a0015,#001a00,#0a0015);
+      flex-direction:column; align-items:center; justify-content:center;
+      text-align:center; padding:40px;
+      pointer-events:none;
+    }
+    #win-screen.show { display:flex; pointer-events:all; animation:fadeIn 1.2s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+    #win-title {
+      font-size:3.5rem; font-weight:900; letter-spacing:0.05em;
+      background:linear-gradient(90deg,#ffd700,#ffffff,#ffd700);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      margin-bottom:16px; animation:shimmer 2s infinite linear;
+      background-size:200% auto;
+    }
+    @keyframes shimmer { to{background-position:200% center} }
+    #win-subtitle { font-size:1.1rem; color:rgba(255,255,255,0.75); max-width:520px; line-height:1.7; margin-bottom:32px; }
+    #win-stats { color:#f4c542; font-size:0.95rem; margin-bottom:36px; line-height:2; }
+    #win-continue-btn {
+      padding:14px 40px; border-radius:30px; border:none; cursor:pointer; font-size:1rem; font-weight:700;
+      background:linear-gradient(135deg,#ffd700,#ff8800); color:#0a1628; letter-spacing:0.05em;
+      box-shadow:0 0 30px rgba(255,215,0,0.4); transition:transform 0.15s, box-shadow 0.15s;
+    }
+    #win-continue-btn:hover { transform:scale(1.05); box-shadow:0 0 40px rgba(255,215,0,0.6); }
+    .win-stars { font-size:2rem; margin-bottom:8px; letter-spacing:0.3em; }
+  </style>
+</head>
+<body>
+
+<!-- Intro Screen -->
+<!-- Win Screen -->
+<div id="win-screen">
+  <div class="win-stars">🌌 🦆 🌌</div>
+  <div id="win-title">GREAT JOB!</div>
+  <div id="win-subtitle">
+    Great job — you saved the ducks! 🦆<br>
+    You colonised 100 Duck Galaxies and the duck species now spans the cosmos.<br>
+    <strong>Mission 1 Complete.</strong>
+  </div>
+  <div id="win-stats"></div>
+  <button id="win-continue-btn">🦆 Keep Playing</button>
+</div>
+
+<div id="intro-overlay">
+  <div id="intro-box">
+    <div id="intro-date">📅 March 21, 2026 — Emergency Broadcast</div>
+    <span id="intro-duck-icon">🦆</span>
+    <h1>Operation: Duck Revival</h1>
+    <h2>A Global Wildlife Crisis</h2>
+    <div id="intro-story">
+      <p>
+        The year is <strong>2026</strong>. For decades, unchecked hunting, habitat destruction,
+        and pollution have pushed the world's duck population to the brink of extinction.
+        By early March, scientists confirmed the unthinkable — fewer than <strong>200 wild ducks
+        remain on Earth</strong>.
+      </p>
+      <p>
+        On <strong>March 21st</strong>, the United Nations declared a global ecological emergency.
+        World leaders signed the <em>Quack Accords</em>, pledging every available resource to one
+        goal: <strong>bring the ducks back</strong>.
+      </p>
+      <p>
+        You have been chosen. As the newly appointed <strong>Chief Duck Officer</strong>, it falls
+        to you to rebuild the duck population from scratch — one quack at a time. Start small,
+        grow your flock, hatch eggs, recruit ducklings, and expand into a full duck empire.
+      </p>
+      <p>
+        The world is watching. <strong>Don't let the ducks down.</strong>
+      </p>
+    </div>
+    <div id="intro-mission">
+      <span>🎯 Your mission:</span> Click the duck to generate resources, buy more ducks and
+      infrastructure, and restore the global duck population before it's too late.
+      Every click counts. Every egg matters.
+    </div>
+    <button id="intro-start">🦆 Begin the Revival</button>
+  </div>
+</div>
+
+<div id="stars-bg"></div>
+
+<!-- Top bar -->
+<div id="topbar">
+  <div class="stat-group">
+    <span style="font-size:1.5rem">🦆</span>
+    <div><div class="stat-val" id="ducks-val">0</div><div class="stat-label">Ducks</div></div>
+  </div>
+  <div class="divider"></div>
+  <div class="stat-group">
+    <span style="font-size:1.5rem">⚡</span>
+    <div><div class="stat-val" id="dps-val">0/s</div><div class="stat-label">Per Second</div></div>
+  </div>
+  <div class="divider"></div>
+  <div class="stat-group">
+    <span style="font-size:1.5rem">🥚</span>
+    <div><div class="stat-val" id="eggs-val">0</div><div class="stat-label">Eggs</div></div>
+  </div>
+  <div class="divider"></div>
+  <div class="stat-group">
+    <span style="font-size:1.5rem">🖱️</span>
+    <div><div class="stat-val" id="cpc-val" style="color:#f4a04a;">1</div><div class="stat-label">Per Click</div></div>
+  </div>
+  <div class="divider"></div>
+  <div class="stat-group">
+    <span style="font-size:1.5rem">📅</span>
+    <div><div class="stat-val" id="day-val" style="color:#a8d8ff;">Day 1</div><div class="stat-label">Mar 21 2026</div></div>
+  </div>
+  <div class="divider"></div>
+  <div id="event-timer-group" class="stat-group">
+    <span style="font-size:1.3rem">⚠️</span>
+    <div>
+      <div id="event-timer-val">5:00</div>
+      <div id="event-timer-bar"><div id="event-timer-fill"></div></div>
+      <div class="stat-label">Next Event</div>
+    </div>
+  </div>
+  <div id="game-title">🦆 Duck Revive: Mission 1</div>
+</div>
+
+<!-- Main -->
+<div id="main">
+  <div id="duck-area">
+    <div id="glow-ring"></div>
+    <div id="duck-wrap">
+      <div id="duck-spinner">
+        <canvas id="duck-canvas" width="180" height="180"></canvas>
+      </div>
+    </div>
+    <div id="click-hint">Click to quack</div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="shop-title">🛒 Shop</div>
+
+    <div id="egg-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🥚</span>
+        <div>
+          <div class="egg-name">Egg</div>
+          <div class="egg-sub">+1 duck / second each</div>
+        </div>
+      </div>
+      <span id="egg-cost-label">🦆 1 duck each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="buy-1">×1</button>
+        <button class="buy-btn" id="buy-5">×5</button>
+        <button class="buy-btn" id="buy-10">×10</button>
+        <button class="buy-btn" id="buy-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duckling -->
+    <div id="duckling-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🐥</span>
+        <div>
+          <div class="egg-name">Duckling</div>
+          <div class="egg-sub">+10 ducks per click</div>
+          <div class="owned-count">Owned: <span id="duckling-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost" id="duckling-cost-label">🦆 5 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dbl-1">×1</button>
+        <button class="buy-btn" id="dbl-5">×5</button>
+        <button class="buy-btn" id="dbl-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Kid Duck -->
+    <div id="kidduck-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🦆</span>
+        <div>
+          <div class="egg-name" style="color:#b478ff">Kid Duck</div>
+          <div class="egg-sub">+100 ducks per click</div>
+          <div class="owned-count">Owned: <span id="kidduck-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost" id="kidduck-cost-label">🦆 50 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="kdb-1">×1</button>
+        <button class="buy-btn" id="kdb-5">×5</button>
+        <button class="buy-btn" id="kdb-max">Max</button>
+      </div>
+    </div>
+
+    <div class="section-label">🖱️ Click Power</div>
+
+    <!-- Goose -->
+    <div id="goose-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🦢</span>
+        <div>
+          <div class="egg-name">Goose</div>
+          <div class="egg-sub">+1,000 ducks per click</div>
+          <div class="owned-count">Owned: <span id="goose-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 5,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="gs-1">×1</button>
+        <button class="buy-btn" id="gs-5">×5</button>
+        <button class="buy-btn" id="gs-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Dragon Duck -->
+    <div id="dragonduck-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🐉</span>
+        <div>
+          <div class="egg-name">Dragon Duck</div>
+          <div class="egg-sub">+10,000 ducks per click</div>
+          <div class="owned-count">Owned: <span id="dragonduck-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 10,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dd-1">×1</button>
+        <button class="buy-btn" id="dd-5">×5</button>
+        <button class="buy-btn" id="dd-max">Max</button>
+      </div>
+    </div>
+
+    <div class="section-label">⚡ Passive Income</div>
+
+    <!-- Duck Pond -->
+    <div id="duckpond-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🏊</span>
+        <div>
+          <div class="egg-name">Duck Pond</div>
+          <div class="egg-sub">+25 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckpond-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 20,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dp-1">×1</button>
+        <button class="buy-btn" id="dp-5">×5</button>
+        <button class="buy-btn" id="dp-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Factory -->
+    <div id="duckfactory-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🏭</span>
+        <div>
+          <div class="egg-name">Duck Factory</div>
+          <div class="egg-sub">+100 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckfactory-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 25,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="df-1">×1</button>
+        <button class="buy-btn" id="df-5">×5</button>
+        <button class="buy-btn" id="df-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Band -->
+    <div id="duckband-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🎺</span>
+        <div>
+          <div class="egg-name">Duck Band</div>
+          <div class="egg-sub">+500 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckband-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 150,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="db-1">×1</button>
+        <button class="buy-btn" id="db-5">×5</button>
+        <button class="buy-btn" id="db-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Chef -->
+    <div id="duckchef-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">👨‍🍳</span>
+        <div>
+          <div class="egg-name">Duck Chef</div>
+          <div class="egg-sub">+2,000 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckchef-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 200,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dc-1">×1</button>
+        <button class="buy-btn" id="dc-5">×5</button>
+        <button class="buy-btn" id="dc-max">Max</button>
+      </div>
+    </div>
+
+    <div class="section-label">✨ Special</div>
+
+    <!-- Duck Lab -->
+    <div id="ducklab-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🔬</span>
+        <div>
+          <div class="egg-name">Duck Lab</div>
+          <div class="egg-sub">×2 all passive income</div>
+          <div class="owned-count">Owned: <span id="ducklab-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 250,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dl-1">×1</button>
+        <button class="buy-btn" id="dl-5">×5</button>
+        <button class="buy-btn" id="dl-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Golden Duck (one-time) -->
+    <div id="goldenduck-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">⭐</span>
+        <div>
+          <div class="egg-name">Golden Duck <span class="one-time-badge">1×</span></div>
+          <div class="egg-sub">×2 all ducks per click</div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 1,000,000 ducks</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="gd-buy">Buy</button>
+      </div>
+    </div>
+
+    <!-- Duck Wizard -->
+    <div id="duckwizard-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🧙</span>
+        <div>
+          <div class="egg-name">Duck Wizard</div>
+          <div class="egg-sub">+50,000 ducks per click</div>
+          <div class="owned-count">Owned: <span id="duckwizard-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 500,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dw-1">×1</button>
+        <button class="buy-btn" id="dw-5">×5</button>
+        <button class="buy-btn" id="dw-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Astronaut -->
+    <div id="duckastronaut-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🚀</span>
+        <div>
+          <div class="egg-name">Duck Astronaut</div>
+          <div class="egg-sub">+500,000 ducks per click</div>
+          <div class="owned-count">Owned: <span id="duckastronaut-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 5,000,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="da-1">×1</button>
+        <button class="buy-btn" id="da-5">×5</button>
+        <button class="buy-btn" id="da-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Generator (passive) -->
+    <div id="duckgenerator-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">⚡</span>
+        <div>
+          <div class="egg-name">Duck Generator</div>
+          <div class="egg-sub">+500 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckgenerator-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 75,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dg-1">×1</button>
+        <button class="buy-btn" id="dg-5">×5</button>
+        <button class="buy-btn" id="dg-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Castle (passive) -->
+    <div id="duckcastle-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🏰</span>
+        <div>
+          <div class="egg-name">Duck Castle</div>
+          <div class="egg-sub">+10,000 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckcastle-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 1,000,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dcs-1">×1</button>
+        <button class="buy-btn" id="dcs-5">×5</button>
+        <button class="buy-btn" id="dcs-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Planet (passive) -->
+    <div id="duckplanet-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🌍</span>
+        <div>
+          <div class="egg-name">Duck Planet</div>
+          <div class="egg-sub">+100,000 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckplanet-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 50,000,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dpl-1">×1</button>
+        <button class="buy-btn" id="dpl-5">×5</button>
+        <button class="buy-btn" id="dpl-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Gamble (special repeatable) -->
+    <div id="duckgamble-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🎰</span>
+        <div>
+          <div class="egg-name">Duck Gamble</div>
+          <div class="egg-sub">Win 0, 50K, or 500K ducks!</div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 10,000 ducks per spin</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="gamble-btn">Spin!</button>
+      </div>
+      <div id="gamble-result"></div>
+    </div>
+
+    <!-- Duck Tsunami (one-time) -->
+    <div id="ducktsunami-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🌊</span>
+        <div>
+          <div class="egg-name">Duck Tsunami <span class="one-time-badge">1×</span></div>
+          <div class="egg-sub">Instantly gain 1M ducks!</div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 5,000,000 ducks</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dt-buy">Buy</button>
+      </div>
+    </div>
+
+    <!-- Duck Hatchery (passive) -->
+    <div id="duckhatchery-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🐣</span>
+        <div>
+          <div class="egg-name">Duck Hatchery</div>
+          <div class="egg-sub">+3,000 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckhatchery-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 500,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dh-1">×1</button>
+        <button class="buy-btn" id="dh-5">×5</button>
+        <button class="buy-btn" id="dh-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Navy (click) -->
+    <div id="ducknavy-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">⚓</span>
+        <div>
+          <div class="egg-name">Duck Navy</div>
+          <div class="egg-sub">+5,000,000 ducks per click</div>
+          <div class="owned-count">Owned: <span id="ducknavy-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 50,000,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dn-1">×1</button>
+        <button class="buy-btn" id="dn-5">×5</button>
+        <button class="buy-btn" id="dn-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck University (passive) -->
+    <div id="duckuniversity-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🎓</span>
+        <div>
+          <div class="egg-name">Duck University</div>
+          <div class="egg-sub">+50,000 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckuniversity-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 10,000,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="du-1">×1</button>
+        <button class="buy-btn" id="du-5">×5</button>
+        <button class="buy-btn" id="du-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Galaxy (passive) -->
+    <div id="duckgalaxy-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🌌</span>
+        <div>
+          <div class="egg-name">Duck Galaxy</div>
+          <div class="egg-sub">+1,000,000 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckgalaxy-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 100,000,000,000,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dgal-1">×1</button>
+        <button class="buy-btn" id="dgal-5">×5</button>
+        <button class="buy-btn" id="dgal-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Multiverse (passive) -->
+    <div id="duckmultiverse-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">🎆</span>
+        <div>
+          <div class="egg-name">Duck Multiverse</div>
+          <div class="egg-sub">+10,000,000 ducks / second each</div>
+          <div class="owned-count">Owned: <span id="duckmultiverse-owned">0</span></div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 5,000,000,000 ducks each</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dmv-1">×1</button>
+        <button class="buy-btn" id="dmv-5">×5</button>
+        <button class="buy-btn" id="dmv-max">Max</button>
+      </div>
+    </div>
+
+    <!-- Duck Vaccine (one-time) -->
+    <div id="duckvaccine-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">💉</span>
+        <div>
+          <div class="egg-name">Duck Vaccine <span class="one-time-badge">1×</span></div>
+          <div class="egg-sub">Halves all event losses forever</div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 1,000,000 ducks</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dv-buy">Buy</button>
+      </div>
+    </div>
+
+    <!-- Duck Time Machine (one-time) -->
+    <div id="ducktimemachine-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">⏰</span>
+        <div>
+          <div class="egg-name">Time Machine <span class="one-time-badge">1×</span></div>
+          <div class="egg-sub">Instantly gain 1 hour of passive income</div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 10,000,000 ducks</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dtm-buy">Buy</button>
+      </div>
+    </div>
+
+    <!-- Duck God (one-time) -->
+    <div id="duckgod-card">
+      <div class="egg-card-top">
+        <span class="egg-icon">✨</span>
+        <div>
+          <div class="egg-name">Duck God <span class="one-time-badge">1×</span></div>
+          <div class="egg-sub">×10 ALL income forever</div>
+        </div>
+      </div>
+      <span class="item-cost">🦆 1,000,000,000 ducks</span>
+      <div class="buy-row">
+        <button class="buy-btn" id="dgod-buy">Buy</button>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <button id="ach-btn">🏆 Achievements <span id="ach-badge">0</span></button>
+
+    <button id="save-btn">💾 Save Progress</button>
+
+    <button id="restart-btn">🔄 Restart Game</button>
+
+    <div id="stats-box">
+      <div class="stats-title">Stats</div>
+      <div class="stats-body">
+        <div>🖱️ Clicks: <span id="stat-clicks">0</span></div>
+        <div>🦆 Total ducks: <span id="stat-total-ducks">0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Achievement popup -->
+<div id="ach-popup">
+  <span style="font-size:2rem">🏆</span>
+  <div>
+    <div id="popup-title">Achievement Unlocked!</div>
+    <div id="popup-name"></div>
+    <div id="popup-reward"></div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-header">
+      <h2>🏆 Achievements</h2>
+      <button id="close-modal">✕</button>
+    </div>
+    <div id="ach-list"></div>
+  </div>
+</div>
+
+<!-- Event Alert -->
+<div id="event-popup">
+  <div id="event-icon">⚠️</div>
+  <div id="event-title">Event!</div>
+  <div id="event-desc"></div>
+</div>
+
+<!-- Heart of the Duck indicator -->
+<div id="heart-indicator">
+  <span>💜</span> Heart of the Duck — Protected!
+</div>
+
+<!-- Restart confirm dialog -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <h3>Restart Game?</h3>
+    <p>This will wipe ALL your ducks, eggs, items, and achievements. There's no going back!</p>
+    <div class="confirm-btns">
+      <button id="confirm-yes">Yes, restart</button>
+      <button id="confirm-no">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let ducks = 0, eggs = 0, totalEggsBought = 0, totalClicks = 0;
+let ducklings = 0, kidDucks = 0, geese = 0, dragonDucks = 0; // click items
+let duckPonds = 0, duckFactories = 0, duckBands = 0, duckChefs = 0; // passive items
+let duckLabs = 0; // multiplier
+let goldenDuckBought = false, duckTsunamiBought = false; // one-time specials
+let duckWizards = 0, duckAstronauts = 0, duckNavies = 0; // click items
+let duckGenerators = 0, duckCastles = 0, duckPlanets = 0; // passive tier 2
+let duckHatcheries = 0, duckUniversities = 0, duckGalaxies = 0, duckMultiverses = 0; // passive tier 3
+let duckVaccineBought = false, duckTimeMachineBought = false, duckGodBought = false; // one-time
+let rotation = 0, bouncing = false;
+let gameDay = 1, dayStartTime = Date.now();
+let heartOfDuck = false; // protects from events
+let nextEventTime = Date.now() + 5 * 60 * 1000; // first event in 5 min
+let lastEventDay = 0; // track which day a loss event last happened
+let unlockedAchievements = [], equippedAccessories = [];
+let popupTimer = null, eggAccum = 0, lastEggTime = performance.now();
+
+// ── Safety: always keep ducks a valid finite number ────────────────────────
+function safeDucks(v){ return (isFinite(v) && !isNaN(v) && v >= 0) ? v : 0; }
+function sanitizeNum(v){ return (isFinite(v) && !isNaN(v)) ? v : 0; }
+
+const ACHIEVEMENTS = [
+  { id:"first_egg",        name:"First Egg!",        desc:"Buy your first egg",                icon:"🥚", reward:"🎩 Top Hat",        cond:()=>totalEggsBought>=1 },
+  { id:"ten_eggs",         name:"Egg Collector",     desc:"Own 10 eggs",                       icon:"🥚", reward:"🕶️ Cool Shades",   cond:()=>eggs>=10 },
+  { id:"fifty_eggs",       name:"Egg Hoarder",       desc:"Own 50 eggs",                       icon:"🥚", reward:"🎀 Bow Tie",        cond:()=>eggs>=50 },
+  { id:"hundred_eggs",     name:"Egg Farm",          desc:"Own 100 eggs",                      icon:"🥚", reward:"🌻 Sunflower",      cond:()=>eggs>=100 },
+  { id:"five_hundred_ducks",name:"Duck Army",        desc:"Reach 500 ducks",                   icon:"🦆", reward:"👑 Gold Crown",     cond:()=>ducks>=500 },
+  { id:"ten_thousand",     name:"Duck Lord",         desc:"Reach 10,000 ducks",                icon:"🦆", reward:"🌈 Rainbow Cape",   cond:()=>ducks>=10000 },
+  { id:"hundred_thousand", name:"Duck Tycoon",       desc:"Reach 100,000 ducks",               icon:"🦆", reward:"💎 Diamond",        cond:()=>ducks>=100000 },
+  { id:"million_ducks",    name:"Duck Millionaire",  desc:"Reach 1,000,000 ducks",             icon:"🦆", reward:"🏆 Trophy",         cond:()=>ducks>=1000000 },
+  { id:"click_200",        name:"Clicker",           desc:"Click the duck 200 times",          icon:"👆", reward:"🧢 Cap",            cond:()=>totalClicks>=200 },
+  { id:"click_1000",       name:"Quack Attack",      desc:"Click the duck 1,000 times",        icon:"👆", reward:"💫 Sparkles",       cond:()=>totalClicks>=1000 },
+  { id:"click_5000",       name:"Quack Master",      desc:"Click the duck 5,000 times",        icon:"👆", reward:"⚡ Lightning Bolt",  cond:()=>totalClicks>=5000 },
+  { id:"click_10000",      name:"Quack Legend",      desc:"Click the duck 10,000 times",       icon:"👆", reward:"🔥 Flame",          cond:()=>totalClicks>=10000 },
+  { id:"first_duckling",   name:"Baby Steps",        desc:"Buy your first Duckling",           icon:"🐥", reward:"🎸 Guitar",         cond:()=>ducklings>=1 },
+  { id:"ten_ducklings",    name:"Duckling Squad",    desc:"Own 10 Ducklings",                  icon:"🐥", reward:"🌟 Gold Star",      cond:()=>ducklings>=10 },
+  { id:"fifty_ducklings",  name:"Duckling Army",     desc:"Own 50 Ducklings",                  icon:"🐥", reward:"🛡️ Shield",         cond:()=>ducklings>=50 },
+  { id:"first_kidduck",    name:"Growing Up",        desc:"Buy your first Kid Duck",           icon:"🦆", reward:"🦺 Life Vest",      cond:()=>kidDucks>=1 },
+  { id:"ten_kidducks",     name:"Kid Gang",          desc:"Own 10 Kid Ducks",                  icon:"🦆", reward:"🎖️ Medal",          cond:()=>kidDucks>=10 },
+  { id:"fifty_kidducks",   name:"Duck Dynasty",      desc:"Own 50 Kid Ducks",                  icon:"🦆", reward:"👸 Crown Prince",   cond:()=>kidDucks>=50 },
+  { id:"combo_master",     name:"Combo Master",      desc:"Own 25 of every item",              icon:"🌀", reward:"🌠 Shooting Star",  cond:()=>eggs>=25&&ducklings>=25&&kidDucks>=25 },
+  { id:"billionaire",      name:"Duck Billionaire",  desc:"Reach 10,000,000 ducks",            icon:"💰", reward:"🚀 Rocket",         cond:()=>ducks>=10000000 },
+  { id:"first_goose",      name:"Honk!",             desc:"Buy your first Goose",              icon:"🦢", reward:"🪶 Feather",         cond:()=>geese>=1 },
+  { id:"first_dragonduck", name:"Dragon Tamer",      desc:"Buy your first Dragon Duck",        icon:"🐉", reward:"🔥 Dragon Flame",    cond:()=>dragonDucks>=1 },
+  { id:"dragons_keep",     name:"Dragon's Keep",    desc:"Own 10 Dragon Ducks",               icon:"🐉", reward:"🏯 Dragon Keep",    cond:()=>dragonDucks>=10 },
+  { id:"first_wizard",     name:"Quackademic",       desc:"Buy your first Duck Wizard",        icon:"🧙", reward:"🪄 Magic Wand",      cond:()=>duckWizards>=1 },
+  { id:"first_castle",     name:"Lord of the Pond",  desc:"Build your first Duck Castle",      icon:"🏰", reward:"🗡️ Sword",           cond:()=>duckCastles>=1 },
+  { id:"first_astronaut",  name:"Ducks in Space",    desc:"Buy your first Duck Astronaut",     icon:"🚀", reward:"🌌 Galaxy",          cond:()=>duckAstronauts>=1 },
+  { id:"click_50000",      name:"Iron Beak",         desc:"Click the duck 50,000 times",       icon:"👆", reward:"🤖 Robot Hand",      cond:()=>totalClicks>=50000 },
+  { id:"galaxy_ducks",     name:"Galaxy Brain",      desc:"Reach 1,000,000,000 ducks",         icon:"🌌", reward:"👼 Angel Wings",     cond:()=>ducks>=1000000000 },
+  { id:"five_labs",        name:"Mad Scientist",     desc:"Own 5 Duck Labs",                   icon:"🔬", reward:"🧬 DNA Strand",      cond:()=>duckLabs>=5 },
+  { id:"survived_tsunami", name:"Tsunami Survivor",  desc:"Buy the Duck Tsunami",              icon:"🌊", reward:"🏄 Surfboard",       cond:()=>duckTsunamiBought },
+  { id:"golden_owner",     name:"Midas Quack",       desc:"Own the Golden Duck",               icon:"⭐", reward:"👼 Angel Wings",     cond:()=>goldenDuckBought },
+  { id:"full_band",        name:"Rock Band",         desc:"Own 5 Duck Bands",                  icon:"🎺", reward:"🎵 Music Note",      cond:()=>duckBands>=5 },
+];
+
+// Overlays (rotate with spinner, positioned inside duck-spinner div)
+// These are fine-tuned offsets for the 180×180 canvas with duck at center.
+const OVERLAY = {
+  "🕶️ Cool Shades": "top:68px;font-size:1.55rem;",
+  "🎀 Bow Tie":     "top:118px;font-size:1.4rem;",
+  "🌈 Rainbow Cape":"top:128px;font-size:2rem;",
+  "🧢 Cap":         "top:12px;font-size:2.1rem;",
+  "👑 Gold Crown":  "top:10px;font-size:1.9rem;",
+};
+// Top Hat is drawn directly on canvas so it rotates perfectly with the duck.
+
+// ── DOM ────────────────────────────────────────────────────────────────────
+const ducksVal     = document.getElementById('ducks-val');
+const dpsVal       = document.getElementById('dps-val');
+const eggsVal      = document.getElementById('eggs-val');
+const achBadge     = document.getElementById('ach-badge');
+const statClicks   = document.getElementById('stat-clicks');
+const statTotDucks = document.getElementById('stat-total-ducks');
+const duckWrap     = document.getElementById('duck-wrap');
+const duckSpinner  = document.getElementById('duck-spinner');
+const canvas       = document.getElementById('duck-canvas');
+const ctx          = canvas.getContext('2d');
+const achPopup     = document.getElementById('ach-popup');
+const modalOverlay = document.getElementById('modal-overlay');
+const achList      = document.getElementById('ach-list');
+const eggCard      = document.getElementById('egg-card');
+const b1   = document.getElementById('buy-1');
+const b5   = document.getElementById('buy-5');
+const b10  = document.getElementById('buy-10');
+const bMax = document.getElementById('buy-max');
+const saveBtn = document.getElementById('save-btn');
+
+// ── Stars ──────────────────────────────────────────────────────────────────
+const starsBg = document.getElementById('stars-bg');
+for(let i=0;i<40;i++){
+  const s=document.createElement('div'); s.className='star';
+  const sz=Math.random()*2+1, dur=(Math.random()*3+2).toFixed(2);
+  s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;opacity:${(Math.random()*0.6+0.2).toFixed(2)};--dur:${dur}s`;
+  starsBg.appendChild(s);
+}
+
+// ── Quack (Web Audio) ──────────────────────────────────────────────────────
+const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+function playQuack(){
+  const t=audioCtx.currentTime;
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  const v=audioCtx.createOscillator(), vg=audioCtx.createGain();
+  v.frequency.value=18; vg.gain.value=42;
+  v.connect(vg); vg.connect(o.frequency);
+  o.type='sawtooth';
+  o.frequency.setValueAtTime(600,t);
+  o.frequency.exponentialRampToValueAtTime(270,t+0.19);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(0.28,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001,t+0.23);
+  o.connect(g); g.connect(audioCtx.destination);
+  v.start(t); o.start(t); o.stop(t+0.26); v.stop(t+0.26);
+}
+
+// ── Canvas draw ────────────────────────────────────────────────────────────
+function drawDuck(){
+  ctx.clearRect(0,0,180,180);
+  const sc = bouncing ? 0.88 : 1;
+  ctx.save();
+  ctx.translate(90,90); ctx.scale(sc,sc); ctx.translate(-90,-90);
+
+  ctx.font='100px serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText('🦆',90,95);
+
+  if(equippedAccessories.includes("🎩 Top Hat")){
+    ctx.font='52px serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='bottom';
+    ctx.fillText('🎩',84,46);
+  }
+
+  ctx.restore();
+}
+
+// ── Animation loop ─────────────────────────────────────────────────────────
+function animLoop(){
+  rotation=(rotation+0.4)%360;
+  duckSpinner.style.transform=`rotateY(${rotation}deg)`;
+  drawDuck();
+  requestAnimationFrame(animLoop);
+}
+animLoop();
+
+// ── Egg production — rAF-based so no timer drift / reset bug ───────────────
+(function eggTick(now){
+  const godMult = duckGodBought ? 10 : 1;
+  const passiveRate = (eggs*1 + duckPonds*25 + duckFactories*100 + duckBands*500 + duckChefs*2000 + duckGenerators*500 + duckCastles*10000 + duckPlanets*100000 + duckHatcheries*3000 + duckUniversities*50000 + duckGalaxies*1000000 + duckMultiverses*10000000) * Math.pow(2, duckLabs) * godMult;
+  if(passiveRate>0){
+    const dt=(now-lastEggTime)/1000;
+    eggAccum+=passiveRate*dt;
+    const w=Math.floor(eggAccum);
+    if(w>0){ ducks=safeDucks(ducks+w); eggAccum-=w; updateUI(); checkAchievements(); }
+  }
+  lastEggTime=now;
+  requestAnimationFrame(eggTick);
+})(performance.now());
+
+// ── UI ─────────────────────────────────────────────────────────────────────
+function updateUI(){
+  ducks=safeDucks(ducks); // guard against NaN creep
+  const fd=Math.floor(ducks);
+  ducksVal.textContent    = fd.toLocaleString();
+  const goldenMult = goldenDuckBought ? 2 : 1;
+  const godMult2 = duckGodBought ? 10 : 1;
+  const cpc = (1+(10*ducklings)+(100*kidDucks)+(1000*geese)+(10000*dragonDucks)+(50000*duckWizards)+(500000*duckAstronauts)+(5000000*duckNavies)) * goldenMult * godMult2;
+  const godMultD = duckGodBought ? 10 : 1;
+  const passiveDisp = (eggs*1 + duckPonds*25 + duckFactories*100 + duckBands*500 + duckChefs*2000 + duckGenerators*500 + duckCastles*10000 + duckPlanets*100000 + duckHatcheries*3000 + duckUniversities*50000 + duckGalaxies*1000000 + duckMultiverses*10000000) * Math.pow(2, duckLabs) * godMultD;
+  dpsVal.textContent = Math.floor(passiveDisp).toLocaleString()+'/s';
+  document.getElementById('dps-val').title = cpc+' ducks/click';
+  const cpcEl = document.getElementById('cpc-val'); if(cpcEl) cpcEl.textContent = cpc.toLocaleString();
+  eggsVal.textContent     = eggs;
+  // update new item owneds
+  const el_go=document.getElementById('goose-owned'); if(el_go) el_go.textContent=geese;
+  const el_dd=document.getElementById('dragonduck-owned'); if(el_dd) el_dd.textContent=dragonDucks;
+  const el_dp=document.getElementById('duckpond-owned'); if(el_dp) el_dp.textContent=duckPonds;
+  const el_df=document.getElementById('duckfactory-owned'); if(el_df) el_df.textContent=duckFactories;
+  const el_db=document.getElementById('duckband-owned'); if(el_db) el_db.textContent=duckBands;
+  const el_dch=document.getElementById('duckchef-owned'); if(el_dch) el_dch.textContent=duckChefs;
+  const el_dl=document.getElementById('ducklab-owned'); if(el_dl) el_dl.textContent=duckLabs;
+  const el_dw=document.getElementById('duckwizard-owned'); if(el_dw) el_dw.textContent=duckWizards;
+  const el_da=document.getElementById('duckastronaut-owned'); if(el_da) el_da.textContent=duckAstronauts;
+  const el_dgen=document.getElementById('duckgenerator-owned'); if(el_dgen) el_dgen.textContent=duckGenerators;
+  const el_dcs=document.getElementById('duckcastle-owned'); if(el_dcs) el_dcs.textContent=duckCastles;
+  const el_dpl=document.getElementById('duckplanet-owned'); if(el_dpl) el_dpl.textContent=duckPlanets;
+  const el_dh=document.getElementById('duckhatchery-owned'); if(el_dh) el_dh.textContent=duckHatcheries;
+  const el_dn=document.getElementById('ducknavy-owned'); if(el_dn) el_dn.textContent=duckNavies;
+  const el_du=document.getElementById('duckuniversity-owned'); if(el_du) el_du.textContent=duckUniversities;
+  const el_dgal=document.getElementById('duckgalaxy-owned'); if(el_dgal) el_dgal.textContent=duckGalaxies;
+  const el_dmv=document.getElementById('duckmultiverse-owned'); if(el_dmv) el_dmv.textContent=duckMultiverses;
+  statClicks.textContent  = totalClicks;
+  statTotDucks.textContent= fd.toLocaleString();
+  achBadge.textContent    = unlockedAchievements.length;
+  const fl=Math.floor(ducks);
+  eggCard.className = fl>=1 ? 'afford' : '';
+  b1.className   = 'buy-btn'+(fl>=1  ?' on':'');
+  b5.className   = 'buy-btn'+(fl>=5  ?' on':'');
+  b10.className  = 'buy-btn'+(fl>=10 ?' on':'');
+  bMax.className = 'buy-btn'+(fl>=1  ?' on':'');
+  // Duckling buttons
+  const dCard = document.getElementById('duckling-card');
+  const dbl1  = document.getElementById('dbl-1');
+  const dbl5  = document.getElementById('dbl-5');
+  const dblMax= document.getElementById('dbl-max');
+  dCard.className = fl>=5 ? 'afford' : '';
+  dbl1.className  = 'buy-btn'+(fl>=5   ? ' on':'');
+  dbl5.className  = 'buy-btn'+(fl>=25  ? ' on':'');
+  dblMax.className= 'buy-btn'+(fl>=5   ? ' on':'');
+  document.getElementById('duckling-owned').textContent = ducklings;
+  // Kid Duck buttons
+  const kCard = document.getElementById('kidduck-card');
+  const kdb1  = document.getElementById('kdb-1');
+  const kdb5  = document.getElementById('kdb-5');
+  const kdbMax= document.getElementById('kdb-max');
+  kCard.className = fl>=50 ? 'afford' : '';
+  kdb1.className  = 'buy-btn'+(fl>=50  ? ' on':'');
+  kdb5.className  = 'buy-btn'+(fl>=250 ? ' on':'');
+  kdbMax.className= 'buy-btn'+(fl>=50  ? ' on':'');
+  document.getElementById('kidduck-owned').textContent = kidDucks;
+  // Goose
+  const gsCard=document.getElementById('goose-card');
+  gsCard.className=fl>=5000?'afford':'';
+  document.getElementById('gs-1').className='buy-btn'+(fl>=5000?' on':'');
+  document.getElementById('gs-5').className='buy-btn'+(fl>=25000?' on':'');
+  document.getElementById('gs-max').className='buy-btn'+(fl>=5000?' on':'');
+  // Dragon Duck
+  const ddCard=document.getElementById('dragonduck-card');
+  ddCard.className=fl>=10000?'afford':'';
+  document.getElementById('dd-1').className='buy-btn'+(fl>=10000?' on':'');
+  document.getElementById('dd-5').className='buy-btn'+(fl>=50000?' on':'');
+  document.getElementById('dd-max').className='buy-btn'+(fl>=10000?' on':'');
+  // Duck Pond
+  const dpCard=document.getElementById('duckpond-card');
+  dpCard.className=fl>=20000?'afford':'';
+  document.getElementById('dp-1').className='buy-btn'+(fl>=20000?' on':'');
+  document.getElementById('dp-5').className='buy-btn'+(fl>=100000?' on':'');
+  document.getElementById('dp-max').className='buy-btn'+(fl>=20000?' on':'');
+  // Duck Factory
+  const dfCard=document.getElementById('duckfactory-card');
+  dfCard.className=fl>=25000?'afford':'';
+  document.getElementById('df-1').className='buy-btn'+(fl>=25000?' on':'');
+  document.getElementById('df-5').className='buy-btn'+(fl>=125000?' on':'');
+  document.getElementById('df-max').className='buy-btn'+(fl>=25000?' on':'');
+  // Duck Band
+  const dbCard=document.getElementById('duckband-card');
+  dbCard.className=fl>=150000?'afford':'';
+  document.getElementById('db-1').className='buy-btn'+(fl>=150000?' on':'');
+  document.getElementById('db-5').className='buy-btn'+(fl>=750000?' on':'');
+  document.getElementById('db-max').className='buy-btn'+(fl>=150000?' on':'');
+  // Duck Chef
+  const dchCard=document.getElementById('duckchef-card');
+  dchCard.className=fl>=200000?'afford':'';
+  document.getElementById('dc-1').className='buy-btn'+(fl>=200000?' on':'');
+  document.getElementById('dc-5').className='buy-btn'+(fl>=1000000?' on':'');
+  document.getElementById('dc-max').className='buy-btn'+(fl>=200000?' on':'');
+  // Duck Lab
+  const dlCard=document.getElementById('ducklab-card');
+  dlCard.className=fl>=250000?'afford':'';
+  document.getElementById('dl-1').className='buy-btn'+(fl>=250000?' on':'');
+  document.getElementById('dl-5').className='buy-btn'+(fl>=1250000?' on':'');
+  document.getElementById('dl-max').className='buy-btn'+(fl>=250000?' on':'');
+  // Golden Duck (one-time)
+  const gdCard=document.getElementById('goldenduck-card');
+  gdCard.className=fl>=1000000&&!goldenDuckBought?'afford':'';
+  document.getElementById('gd-buy').className='buy-btn'+(fl>=1000000&&!goldenDuckBought?' on':'');
+  document.getElementById('gd-buy').textContent=goldenDuckBought?'✓ Owned':'Buy';
+  // Duck Tsunami (one-time)
+  const dtCard=document.getElementById('ducktsunami-card');
+  dtCard.className=fl>=5000000&&!duckTsunamiBought?'afford':'';
+  document.getElementById('dt-buy').className='buy-btn'+(fl>=5000000&&!duckTsunamiBought?' on':'');
+  document.getElementById('dt-buy').textContent=duckTsunamiBought?'✓ Used':'Buy';
+  // Duck Hatchery
+  document.getElementById('duckhatchery-card').className=fl>=500000?'afford':'';
+  document.getElementById('dh-1').className='buy-btn'+(fl>=500000?' on':'');
+  document.getElementById('dh-5').className='buy-btn'+(fl>=2500000?' on':'');
+  document.getElementById('dh-max').className='buy-btn'+(fl>=500000?' on':'');
+  // Duck Navy
+  document.getElementById('ducknavy-card').className=fl>=50000000?'afford':'';
+  document.getElementById('dn-1').className='buy-btn'+(fl>=50000000?' on':'');
+  document.getElementById('dn-5').className='buy-btn'+(fl>=250000000?' on':'');
+  document.getElementById('dn-max').className='buy-btn'+(fl>=50000000?' on':'');
+  // Duck University
+  document.getElementById('duckuniversity-card').className=fl>=10000000?'afford':'';
+  document.getElementById('du-1').className='buy-btn'+(fl>=10000000?' on':'');
+  document.getElementById('du-5').className='buy-btn'+(fl>=50000000?' on':'');
+  document.getElementById('du-max').className='buy-btn'+(fl>=10000000?' on':'');
+  // Duck Galaxy
+  document.getElementById('duckgalaxy-card').className=fl>=100000000000000?'afford':'';
+  document.getElementById('dgal-1').className='buy-btn'+(fl>=100000000000000?' on':'');
+  document.getElementById('dgal-5').className='buy-btn'+(fl>=500000000000000?' on':'');
+  document.getElementById('dgal-max').className='buy-btn'+(fl>=100000000000000?' on':'');
+  // Duck Multiverse
+  document.getElementById('duckmultiverse-card').className=fl>=5000000000?'afford':'';
+  document.getElementById('dmv-1').className='buy-btn'+(fl>=5000000000?' on':'');
+  document.getElementById('dmv-5').className='buy-btn'+(fl>=25000000000?' on':'');
+  document.getElementById('dmv-max').className='buy-btn'+(fl>=5000000000?' on':'');
+  // Duck Vaccine (one-time)
+  document.getElementById('duckvaccine-card').className=fl>=1000000&&!duckVaccineBought?'afford':'';
+  const dvBtn=document.getElementById('dv-buy'); dvBtn.className='buy-btn'+(fl>=1000000&&!duckVaccineBought?' on':''); dvBtn.textContent=duckVaccineBought?'✓ Owned':'Buy';
+  // Duck Time Machine (one-time)
+  document.getElementById('ducktimemachine-card').className=fl>=10000000&&!duckTimeMachineBought?'afford':'';
+  const dtmBtn=document.getElementById('dtm-buy'); dtmBtn.className='buy-btn'+(fl>=10000000&&!duckTimeMachineBought?' on':''); dtmBtn.textContent=duckTimeMachineBought?'✓ Used':'Buy';
+  // Duck God (one-time)
+  document.getElementById('duckgod-card').className=fl>=1000000000&&!duckGodBought?'afford':'';
+  const dgodBtn=document.getElementById('dgod-buy'); dgodBtn.className='buy-btn'+(fl>=1000000000&&!duckGodBought?' on':''); dgodBtn.textContent=duckGodBought?'✓ Active':'Buy';
+  // Duck Wizard
+  const dwCard=document.getElementById('duckwizard-card');
+  dwCard.className=fl>=500000?'afford':'';
+  document.getElementById('dw-1').className='buy-btn'+(fl>=500000?' on':'');
+  document.getElementById('dw-5').className='buy-btn'+(fl>=2500000?' on':'');
+  document.getElementById('dw-max').className='buy-btn'+(fl>=500000?' on':'');
+  // Duck Astronaut
+  const daCard=document.getElementById('duckastronaut-card');
+  daCard.className=fl>=5000000?'afford':'';
+  document.getElementById('da-1').className='buy-btn'+(fl>=5000000?' on':'');
+  document.getElementById('da-5').className='buy-btn'+(fl>=25000000?' on':'');
+  document.getElementById('da-max').className='buy-btn'+(fl>=5000000?' on':'');
+  // Duck Generator
+  const dgenCard=document.getElementById('duckgenerator-card');
+  dgenCard.className=fl>=75000?'afford':'';
+  document.getElementById('dg-1').className='buy-btn'+(fl>=75000?' on':'');
+  document.getElementById('dg-5').className='buy-btn'+(fl>=375000?' on':'');
+  document.getElementById('dg-max').className='buy-btn'+(fl>=75000?' on':'');
+  // Duck Castle
+  const dcsCard=document.getElementById('duckcastle-card');
+  dcsCard.className=fl>=1000000?'afford':'';
+  document.getElementById('dcs-1').className='buy-btn'+(fl>=1000000?' on':'');
+  document.getElementById('dcs-5').className='buy-btn'+(fl>=5000000?' on':'');
+  document.getElementById('dcs-max').className='buy-btn'+(fl>=1000000?' on':'');
+  // Duck Planet
+  const dplCard=document.getElementById('duckplanet-card');
+  dplCard.className=fl>=50000000?'afford':'';
+  document.getElementById('dpl-1').className='buy-btn'+(fl>=50000000?' on':'');
+  document.getElementById('dpl-5').className='buy-btn'+(fl>=250000000?' on':'');
+  document.getElementById('dpl-max').className='buy-btn'+(fl>=50000000?' on':'');
+  // Duck Gamble
+  const dgambleCard=document.getElementById('duckgamble-card');
+  dgambleCard.className=fl>=10000?'afford':'';
+  document.getElementById('gamble-btn').className='buy-btn'+(fl>=10000?' on':'');
+}
+
+// ── Duck click ─────────────────────────────────────────────────────────────
+duckWrap.addEventListener('click',()=>{
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  playQuack();
+  const goldenMult = goldenDuckBought ? 2 : 1;
+  const godMultC = duckGodBought ? 10 : 1;
+  const clickVal = (1 + (10 * ducklings) + (100 * kidDucks) + (1000 * geese) + (10000 * dragonDucks) + (50000 * duckWizards) + (500000 * duckAstronauts) + (5000000 * duckNavies)) * goldenMult * godMultC;
+  ducks = safeDucks(ducks + clickVal); totalClicks++;
+  bouncing=true; setTimeout(()=>bouncing=false,150);
+  // floater spawns from duck-wrap (outer) so it escapes the rotateY
+  const el=document.createElement('div');
+  el.className='floater';
+  el.style.left=`calc(50% + ${Math.random()*60-30}px)`;
+  el.textContent='+'+clickVal+' 🦆';
+  duckWrap.appendChild(el);
+  setTimeout(()=>el.remove(),900);
+  updateUI(); checkAchievements();
+});
+
+// ── Buy eggs ───────────────────────────────────────────────────────────────
+function buyEggs(n){
+  const max=Math.min(n, Math.floor(ducks));
+  if(max<=0) return;
+  ducks=safeDucks(ducks-max); eggs+=max; totalEggsBought+=max;
+  eggAccum=0; // reset accumulator to avoid double-counting on purchase
+  updateUI(); checkAchievements();
+}
+b1.addEventListener('click',  ()=>buyEggs(1));
+b5.addEventListener('click',  ()=>buyEggs(5));
+b10.addEventListener('click', ()=>buyEggs(10));
+bMax.addEventListener('click',()=>buyEggs(Math.floor(ducks)));
+
+// ── Buy Ducklings ──────────────────────────────────────────────────────────────
+const DUCKLING_COST = 5;
+function buyDucklings(n){
+  const canBuy = Math.floor(Math.floor(ducks) / DUCKLING_COST);
+  const qty = Math.min(n, canBuy);
+  if(qty<=0) return;
+  ducks -= qty * DUCKLING_COST;
+  ducklings += qty;
+  updateUI(); checkAchievements();
+}
+document.getElementById('dbl-1').addEventListener('click',  ()=>buyDucklings(1));
+document.getElementById('dbl-5').addEventListener('click',  ()=>buyDucklings(5));
+document.getElementById('dbl-max').addEventListener('click', ()=>buyDucklings(Math.floor(Math.floor(ducks)/DUCKLING_COST)));
+
+// ── Buy Kid Ducks ──────────────────────────────────────────────────────────────
+const KIDDUCK_COST = 50;
+function buyKidDucks(n){
+  const canBuy = Math.floor(Math.floor(ducks) / KIDDUCK_COST);
+  const qty = Math.min(n, canBuy);
+  if(qty<=0) return;
+  ducks -= qty * KIDDUCK_COST;
+  kidDucks += qty;
+  updateUI(); checkAchievements();
+}
+document.getElementById('kdb-1').addEventListener('click',  ()=>buyKidDucks(1));
+document.getElementById('kdb-5').addEventListener('click',  ()=>buyKidDucks(5));
+document.getElementById('kdb-max').addEventListener('click', ()=>buyKidDucks(Math.floor(Math.floor(ducks)/KIDDUCK_COST)));
+
+// ── Buy Geese ─────────────────────────────────────────────────────────────────
+const GOOSE_COST=5000;
+function buyGeese(n){ const q=Math.min(n,Math.floor(ducks/GOOSE_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*GOOSE_COST); geese+=q; updateUI(); checkAchievements(); }
+document.getElementById('gs-1').addEventListener('click',()=>buyGeese(1));
+document.getElementById('gs-5').addEventListener('click',()=>buyGeese(5));
+document.getElementById('gs-max').addEventListener('click',()=>buyGeese(Math.floor(ducks/GOOSE_COST)));
+
+// ── Buy Dragon Ducks ───────────────────────────────────────────────────────────
+const DRAGONDUCK_COST=10000;
+function buyDragonDucks(n){ const q=Math.min(n,Math.floor(ducks/DRAGONDUCK_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DRAGONDUCK_COST); dragonDucks+=q; updateUI(); checkAchievements(); }
+document.getElementById('dd-1').addEventListener('click',()=>buyDragonDucks(1));
+document.getElementById('dd-5').addEventListener('click',()=>buyDragonDucks(5));
+document.getElementById('dd-max').addEventListener('click',()=>buyDragonDucks(Math.floor(ducks/DRAGONDUCK_COST)));
+
+// ── Buy Duck Ponds ─────────────────────────────────────────────────────────────
+const DUCKPOND_COST=20000;
+function buyDuckPonds(n){ const q=Math.min(n,Math.floor(ducks/DUCKPOND_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKPOND_COST); duckPonds+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('dp-1').addEventListener('click',()=>buyDuckPonds(1));
+document.getElementById('dp-5').addEventListener('click',()=>buyDuckPonds(5));
+document.getElementById('dp-max').addEventListener('click',()=>buyDuckPonds(Math.floor(ducks/DUCKPOND_COST)));
+
+// ── Buy Duck Factories ─────────────────────────────────────────────────────────
+const DUCKFACTORY_COST=25000;
+function buyDuckFactories(n){ const q=Math.min(n,Math.floor(ducks/DUCKFACTORY_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKFACTORY_COST); duckFactories+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('df-1').addEventListener('click',()=>buyDuckFactories(1));
+document.getElementById('df-5').addEventListener('click',()=>buyDuckFactories(5));
+document.getElementById('df-max').addEventListener('click',()=>buyDuckFactories(Math.floor(ducks/DUCKFACTORY_COST)));
+
+// ── Buy Duck Bands ─────────────────────────────────────────────────────────────
+const DUCKBAND_COST=150000;
+function buyDuckBands(n){ const q=Math.min(n,Math.floor(ducks/DUCKBAND_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKBAND_COST); duckBands+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('db-1').addEventListener('click',()=>buyDuckBands(1));
+document.getElementById('db-5').addEventListener('click',()=>buyDuckBands(5));
+document.getElementById('db-max').addEventListener('click',()=>buyDuckBands(Math.floor(ducks/DUCKBAND_COST)));
+
+// ── Buy Duck Chefs ─────────────────────────────────────────────────────────────
+const DUCKCHEF_COST=200000;
+function buyDuckChefs(n){ const q=Math.min(n,Math.floor(ducks/DUCKCHEF_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKCHEF_COST); duckChefs+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('dc-1').addEventListener('click',()=>buyDuckChefs(1));
+document.getElementById('dc-5').addEventListener('click',()=>buyDuckChefs(5));
+document.getElementById('dc-max').addEventListener('click',()=>buyDuckChefs(Math.floor(ducks/DUCKCHEF_COST)));
+
+// ── Buy Duck Labs ──────────────────────────────────────────────────────────────
+const DUCKLAB_COST=250000;
+function buyDuckLabs(n){ const q=Math.min(n,Math.floor(ducks/DUCKLAB_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKLAB_COST); duckLabs+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('dl-1').addEventListener('click',()=>buyDuckLabs(1));
+document.getElementById('dl-5').addEventListener('click',()=>buyDuckLabs(5));
+document.getElementById('dl-max').addEventListener('click',()=>buyDuckLabs(Math.floor(ducks/DUCKLAB_COST)));
+
+// ── Buy Golden Duck (one-time) ─────────────────────────────────────────────────
+document.getElementById('gd-buy').addEventListener('click',()=>{
+  if(goldenDuckBought||ducks<1000000) return;
+  ducks=safeDucks(ducks-1000000); goldenDuckBought=true; updateUI(); checkAchievements();
+});
+
+// ── Buy Duck Tsunami (one-time) ────────────────────────────────────────────────
+document.getElementById('dt-buy').addEventListener('click',()=>{
+  if(duckTsunamiBought||ducks<5000000) return;
+  ducks=safeDucks(safeDucks(ducks-5000000)+1000000); duckTsunamiBought=true; updateUI(); checkAchievements();
+});
+
+// ── Buy Duck Wizards ──────────────────────────────────────────────────────────
+const DUCKWIZARD_COST=500000;
+function buyDuckWizards(n){ const q=Math.min(n,Math.floor(ducks/DUCKWIZARD_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKWIZARD_COST); duckWizards+=q; updateUI(); checkAchievements(); }
+document.getElementById('dw-1').addEventListener('click',()=>buyDuckWizards(1));
+document.getElementById('dw-5').addEventListener('click',()=>buyDuckWizards(5));
+document.getElementById('dw-max').addEventListener('click',()=>buyDuckWizards(Math.floor(ducks/DUCKWIZARD_COST)));
+
+// ── Buy Duck Astronauts ────────────────────────────────────────────────────────
+const DUCKASTRONAUT_COST=5000000;
+function buyDuckAstronauts(n){ const q=Math.min(n,Math.floor(ducks/DUCKASTRONAUT_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKASTRONAUT_COST); duckAstronauts+=q; updateUI(); checkAchievements(); }
+document.getElementById('da-1').addEventListener('click',()=>buyDuckAstronauts(1));
+document.getElementById('da-5').addEventListener('click',()=>buyDuckAstronauts(5));
+document.getElementById('da-max').addEventListener('click',()=>buyDuckAstronauts(Math.floor(ducks/DUCKASTRONAUT_COST)));
+
+// ── Buy Duck Generators ────────────────────────────────────────────────────────
+const DUCKGENERATOR_COST=75000;
+function buyDuckGenerators(n){ const q=Math.min(n,Math.floor(ducks/DUCKGENERATOR_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKGENERATOR_COST); duckGenerators+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('dg-1').addEventListener('click',()=>buyDuckGenerators(1));
+document.getElementById('dg-5').addEventListener('click',()=>buyDuckGenerators(5));
+document.getElementById('dg-max').addEventListener('click',()=>buyDuckGenerators(Math.floor(ducks/DUCKGENERATOR_COST)));
+
+// ── Buy Duck Castles ───────────────────────────────────────────────────────────
+const DUCKCASTLE_COST=1000000;
+function buyDuckCastles(n){ const q=Math.min(n,Math.floor(ducks/DUCKCASTLE_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKCASTLE_COST); duckCastles+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('dcs-1').addEventListener('click',()=>buyDuckCastles(1));
+document.getElementById('dcs-5').addEventListener('click',()=>buyDuckCastles(5));
+document.getElementById('dcs-max').addEventListener('click',()=>buyDuckCastles(Math.floor(ducks/DUCKCASTLE_COST)));
+
+// ── Buy Duck Planets ───────────────────────────────────────────────────────────
+const DUCKPLANET_COST=50000000;
+function buyDuckPlanets(n){ const q=Math.min(n,Math.floor(ducks/DUCKPLANET_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKPLANET_COST); duckPlanets+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('dpl-1').addEventListener('click',()=>buyDuckPlanets(1));
+document.getElementById('dpl-5').addEventListener('click',()=>buyDuckPlanets(5));
+document.getElementById('dpl-max').addEventListener('click',()=>buyDuckPlanets(Math.floor(ducks/DUCKPLANET_COST)));
+
+// ── Duck Gamble ────────────────────────────────────────────────────────────────
+document.getElementById('gamble-btn').addEventListener('click',()=>{
+  if(ducks<10000) return;
+  ducks=safeDucks(ducks-10000);
+  const roll=Math.random();
+  let msg, gain;
+  if(roll<0.48){ gain=0;      msg='💀 Quack! You lost it all!'; }
+  else if(roll<0.82){ gain=50000;  msg='🎉 Nice! Won 50,000 ducks!'; }
+  else if(roll<0.97){ gain=500000; msg='🤑 JACKPOT! 500,000 ducks!!'; }
+  else {
+    gain=0; heartOfDuck=true;
+    msg="💜 HEART OF THE DUCK! Events can't hurt you!";
+    document.getElementById('heart-indicator').classList.add('show');
+    saveGame();
+  }
+  ducks=safeDucks(ducks+gain);
+  const res=document.getElementById('gamble-result');
+  res.textContent=msg;
+  res.style.color=gain===0&&!heartOfDuck?'#ff6060':heartOfDuck?'#ff80ff':gain===50000?'#f4c542':'#7ee8a2';
+  updateUI(); checkAchievements();
+});
+
+// ── Buy Duck Hatcheries ────────────────────────────────────────────────────────
+const DUCKHATCHERY_COST=500000;
+function buyDuckHatcheries(n){ const q=Math.min(n,Math.floor(ducks/DUCKHATCHERY_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKHATCHERY_COST); duckHatcheries+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('dh-1').addEventListener('click',()=>buyDuckHatcheries(1));
+document.getElementById('dh-5').addEventListener('click',()=>buyDuckHatcheries(5));
+document.getElementById('dh-max').addEventListener('click',()=>buyDuckHatcheries(Math.floor(ducks/DUCKHATCHERY_COST)));
+
+// ── Buy Duck Navies ─────────────────────────────────────────────────────────────
+const DUCKNAVY_COST=50000000;
+function buyDuckNavies(n){ const q=Math.min(n,Math.floor(ducks/DUCKNAVY_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKNAVY_COST); duckNavies+=q; updateUI(); checkAchievements(); }
+document.getElementById('dn-1').addEventListener('click',()=>buyDuckNavies(1));
+document.getElementById('dn-5').addEventListener('click',()=>buyDuckNavies(5));
+document.getElementById('dn-max').addEventListener('click',()=>buyDuckNavies(Math.floor(ducks/DUCKNAVY_COST)));
+
+// ── Buy Duck Universities ───────────────────────────────────────────────────────
+const DUCKUNIVERSITY_COST=10000000;
+function buyDuckUniversities(n){ const q=Math.min(n,Math.floor(ducks/DUCKUNIVERSITY_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKUNIVERSITY_COST); duckUniversities+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('du-1').addEventListener('click',()=>buyDuckUniversities(1));
+document.getElementById('du-5').addEventListener('click',()=>buyDuckUniversities(5));
+document.getElementById('du-max').addEventListener('click',()=>buyDuckUniversities(Math.floor(ducks/DUCKUNIVERSITY_COST)));
+
+// ── Buy Duck Galaxies ───────────────────────────────────────────────────────────
+const DUCKGALAXY_COST=100000000000000;
+function buyDuckGalaxies(n){ const q=Math.min(n,Math.floor(ducks/DUCKGALAXY_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKGALAXY_COST); duckGalaxies+=q; eggAccum=0; updateUI(); checkAchievements(); checkWin(); }
+function checkWin(){
+  if(duckGalaxies>=100 && !document.getElementById('win-screen').classList.contains('show')){
+    const ws = document.getElementById('win-screen');
+    document.getElementById('win-stats').innerHTML =
+      '🦆 Total Ducks: ' + Math.floor(ducks).toLocaleString() + '<br>' +
+      '🖱️ Total Clicks: ' + totalClicks.toLocaleString() + '<br>' +
+      '📅 Day Reached: Day ' + gameDay;
+    ws.classList.add('show');
+  }
+}
+document.getElementById('win-continue-btn').addEventListener('click',()=>{
+  document.getElementById('win-screen').classList.remove('show');
+});
+document.getElementById('dgal-1').addEventListener('click',()=>buyDuckGalaxies(1));
+document.getElementById('dgal-5').addEventListener('click',()=>buyDuckGalaxies(5));
+document.getElementById('dgal-max').addEventListener('click',()=>buyDuckGalaxies(Math.floor(ducks/DUCKGALAXY_COST)));
+
+// ── Buy Duck Multiverses ────────────────────────────────────────────────────────
+const DUCKMULTIVERSE_COST=5000000000;
+function buyDuckMultiverses(n){ const q=Math.min(n,Math.floor(ducks/DUCKMULTIVERSE_COST)); if(q<=0)return; ducks=safeDucks(ducks-q*DUCKMULTIVERSE_COST); duckMultiverses+=q; eggAccum=0; updateUI(); checkAchievements(); }
+document.getElementById('dmv-1').addEventListener('click',()=>buyDuckMultiverses(1));
+document.getElementById('dmv-5').addEventListener('click',()=>buyDuckMultiverses(5));
+document.getElementById('dmv-max').addEventListener('click',()=>buyDuckMultiverses(Math.floor(ducks/DUCKMULTIVERSE_COST)));
+
+// ── Duck Vaccine (one-time) ─────────────────────────────────────────────────────
+document.getElementById('dv-buy').addEventListener('click',()=>{
+  if(duckVaccineBought||ducks<1000000) return;
+  ducks=safeDucks(ducks-1000000); duckVaccineBought=true; updateUI(); checkAchievements();
+});
+
+// ── Duck Time Machine (one-time) ────────────────────────────────────────────────
+document.getElementById('dtm-buy').addEventListener('click',()=>{
+  if(duckTimeMachineBought||ducks<10000000) return;
+  ducks=safeDucks(ducks-10000000);
+  // Award 1 hour of current passive income
+  const godMultTM = duckGodBought ? 10 : 1;
+  const hourly = (eggs*1+duckPonds*25+duckFactories*100+duckBands*500+duckChefs*2000+duckGenerators*500+duckCastles*10000+duckPlanets*100000+duckHatcheries*3000+duckUniversities*50000+duckGalaxies*1000000+duckMultiverses*10000000)*Math.pow(2,duckLabs)*godMultTM*3600;
+  ducks=safeDucks(ducks+hourly);
+  duckTimeMachineBought=true; updateUI(); checkAchievements();
+});
+
+// ── Duck God (one-time) ─────────────────────────────────────────────────────────
+document.getElementById('dgod-buy').addEventListener('click',()=>{
+  if(duckGodBought||ducks<1000000000) return;
+  ducks=safeDucks(ducks-1000000000); duckGodBought=true; updateUI(); checkAchievements();
+});
+
+// ── Save / Load ────────────────────────────────────────────────────────────
+function saveGame(){
+  localStorage.setItem('duckSave', JSON.stringify({
+    ducks, eggs, totalEggsBought, totalClicks,
+    ducklings, kidDucks, geese, dragonDucks,
+    duckPonds, duckFactories, duckBands, duckChefs, duckLabs,
+    goldenDuckBought, duckTsunamiBought, dayStartTime, heartOfDuck, nextEventTime, lastEventDay,
+    duckWizards, duckAstronauts, duckNavies, duckGenerators, duckCastles, duckPlanets,
+    duckHatcheries, duckUniversities, duckGalaxies, duckMultiverses,
+    duckVaccineBought, duckTimeMachineBought, duckGodBought,
+    unlockedAchievements, equippedAccessories
+  }));
+  saveBtn.textContent='✅ Saved!';
+  saveBtn.classList.add('saved');
+  setTimeout(()=>{ saveBtn.textContent='💾 Save Progress'; saveBtn.classList.remove('saved'); },1800);
+}
+function loadGame(){
+  try{
+    const raw=localStorage.getItem('duckSave');
+    if(!raw) return;
+    const d=JSON.parse(raw);
+    ducks=safeDucks(sanitizeNum(d.ducks)); eggs=sanitizeNum(d.eggs);
+    totalEggsBought=sanitizeNum(d.totalEggsBought); totalClicks=sanitizeNum(d.totalClicks);
+    ducklings=sanitizeNum(d.ducklings); kidDucks=sanitizeNum(d.kidDucks);
+    geese=sanitizeNum(d.geese); dragonDucks=sanitizeNum(d.dragonDucks);
+    duckPonds=sanitizeNum(d.duckPonds); duckFactories=sanitizeNum(d.duckFactories);
+    duckBands=sanitizeNum(d.duckBands); duckChefs=sanitizeNum(d.duckChefs); duckLabs=sanitizeNum(d.duckLabs);
+    goldenDuckBought=d.goldenDuckBought||false; duckTsunamiBought=d.duckTsunamiBought||false;
+    heartOfDuck=d.heartOfDuck||false; nextEventTime=d.nextEventTime||(Date.now()+5*60*1000);
+    lastEventDay=sanitizeNum(d.lastEventDay);
+    duckWizards=sanitizeNum(d.duckWizards); duckAstronauts=sanitizeNum(d.duckAstronauts); duckNavies=sanitizeNum(d.duckNavies);
+    duckGenerators=sanitizeNum(d.duckGenerators); duckCastles=sanitizeNum(d.duckCastles); duckPlanets=sanitizeNum(d.duckPlanets);
+    duckHatcheries=sanitizeNum(d.duckHatcheries); duckUniversities=sanitizeNum(d.duckUniversities);
+    duckGalaxies=sanitizeNum(d.duckGalaxies); duckMultiverses=sanitizeNum(d.duckMultiverses);
+    duckVaccineBought=d.duckVaccineBought||false; duckTimeMachineBought=d.duckTimeMachineBought||false; duckGodBought=d.duckGodBought||false;
+    if(heartOfDuck) document.getElementById('heart-indicator').classList.add('show');
+    dayStartTime=d.dayStartTime||Date.now();
+    duckWizards=d.duckWizards||0; duckAstronauts=d.duckAstronauts||0;
+    duckGenerators=d.duckGenerators||0; duckCastles=d.duckCastles||0; duckPlanets=d.duckPlanets||0;
+    unlockedAchievements=d.unlockedAchievements||[];
+    equippedAccessories=d.equippedAccessories||[];
+    eggAccum=0; lastEggTime=performance.now();
+    renderOverlays(); updateUI();
+  }catch(e){ console.warn('Load failed',e); }
+}
+saveBtn.addEventListener('click', saveGame);
+
+// ── Achievements ───────────────────────────────────────────────────────────
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!unlockedAchievements.includes(a.id)&&a.cond()){
+      unlockedAchievements.push(a.id);
+      document.getElementById('popup-name').textContent=a.name;
+      document.getElementById('popup-reward').textContent='Reward: '+a.reward;
+      achPopup.classList.add('show');
+      if(popupTimer) clearTimeout(popupTimer);
+      popupTimer=setTimeout(()=>achPopup.classList.remove('show'),3000);
+      achBadge.textContent=unlockedAchievements.length;
+    }
+  });
+}
+
+// ── Accessories ────────────────────────────────────────────────────────────
+function renderOverlays(){
+  duckSpinner.querySelectorAll('.acc-overlay').forEach(e=>e.remove());
+  equippedAccessories.forEach(acc=>{
+    if(acc==="🎩 Top Hat") return; // drawn on canvas
+    if(!OVERLAY[acc]) return;
+    const el=document.createElement('div');
+    el.className='acc-overlay';
+    el.style.cssText=OVERLAY[acc];
+    el.textContent=acc.split(' ')[0];
+    duckSpinner.appendChild(el);
+  });
+}
+function toggleAcc(reward){
+  equippedAccessories=equippedAccessories.includes(reward)
+    ? equippedAccessories.filter(a=>a!==reward)
+    : [...equippedAccessories, reward];
+  renderOverlays(); renderModal();
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+function renderModal(){
+  achList.innerHTML='';
+  ACHIEVEMENTS.forEach(a=>{
+    const ul=unlockedAchievements.includes(a.id);
+    const eq=equippedAccessories.includes(a.reward);
+    const div=document.createElement('div');
+    div.className='ach-item'+(ul?' unlocked':'');
+    div.innerHTML=`
+      <span class="ach-item-icon" style="${ul?'':'filter:grayscale(1)'}">${a.icon}</span>
+      <div class="ach-item-body">
+        <div class="ach-item-name">${a.name}</div>
+        <div class="ach-item-desc">${a.desc}</div>
+        ${ul?`<div class="ach-item-reward">Reward: ${a.reward}</div>`:''}
+      </div>
+      ${ul?`<button class="equip-btn${eq?' equipped':''}" data-r="${a.reward}">${eq?'✓ On':'Equip'}</button>`:'<span class="lock-icon">🔒</span>'}`;
+    achList.appendChild(div);
+  });
+  achList.querySelectorAll('.equip-btn').forEach(b=>b.addEventListener('click',()=>toggleAcc(b.dataset.r)));
+}
+
+document.getElementById('ach-btn').addEventListener('click',()=>{ renderModal(); modalOverlay.classList.add('show'); });
+document.getElementById('close-modal').addEventListener('click',()=>modalOverlay.classList.remove('show'));
+modalOverlay.addEventListener('click',e=>{ if(e.target===modalOverlay) modalOverlay.classList.remove('show'); });
+
+// ── Restart ───────────────────────────────────────────────────────────────────
+const confirmOverlay = document.getElementById('confirm-overlay');
+document.getElementById('restart-btn').addEventListener('click', () => confirmOverlay.classList.add('show'));
+document.getElementById('confirm-no').addEventListener('click',  () => confirmOverlay.classList.remove('show'));
+document.getElementById('confirm-yes').addEventListener('click', () => {
+  confirmOverlay.classList.remove('show');
+  // Reset all state
+  ducks=0; eggs=0; totalEggsBought=0; totalClicks=0;
+  ducklings=0; kidDucks=0; geese=0; dragonDucks=0;
+  duckPonds=0; duckFactories=0; duckBands=0; duckChefs=0; duckLabs=0;
+  goldenDuckBought=false; duckTsunamiBought=false;
+  dayStartTime=Date.now(); gameDay=1; updateDayDisplay();
+  heartOfDuck=false; nextEventTime=Date.now()+5*60*1000; lastEventDay=0;
+  document.getElementById('heart-indicator').classList.remove('show');
+  duckWizards=0; duckAstronauts=0; duckNavies=0; duckGenerators=0; duckCastles=0; duckPlanets=0;
+  duckHatcheries=0; duckUniversities=0; duckGalaxies=0; duckMultiverses=0;
+  duckVaccineBought=false; duckTimeMachineBought=false; duckGodBought=false;
+  unlockedAchievements=[]; equippedAccessories=[];
+  eggAccum=0; lastEggTime=performance.now();
+  localStorage.removeItem('duckSave');
+  renderOverlays();
+  updateUI();
+});
+
+// ── Event System ──────────────────────────────────────────────────────────────
+const EVENT_INTERVAL = 5 * 60 * 1000; // event check every 5 minutes
+
+function showEventPopup(type, icon, title, desc) {
+  const popup = document.getElementById('event-popup');
+  popup.className = 'show ' + type;
+  document.getElementById('event-icon').textContent = icon;
+  document.getElementById('event-title').textContent = title;
+  document.getElementById('event-desc').textContent = desc;
+  setTimeout(() => popup.classList.remove('show'), 5000);
+}
+
+function triggerEvent() {
+  // 30% chance an event actually happens
+  if (Math.random() > 0.30) {
+    showEventPopup('safe-event', '🍀', 'All Clear!', 'The ducks are safe for now. Keep building!');
+    return;
+  }
+
+  // Only one loss event per in-game day
+  if (lastEventDay >= gameDay) {
+    showEventPopup('safe-event', '🛡️', 'Already Weathered Today!', 'The flock already survived a crisis today. Rest easy until tomorrow.');
+    return;
+  }
+
+  if (heartOfDuck) {
+    showEventPopup('heart', '💜', 'Heart of the Duck!', 'A threat approached — but the Heart of the Duck repelled it!');
+    return;
+  }
+
+  // 50/50 wolf vs disease
+  if (Math.random() < 0.5) {
+    // Wolf invasion — loses 1,000 ducks or 5% of total, whichever is higher
+    const wolfBase = Math.max(1000, Math.floor(ducks * 0.05));
+    const loss = duckVaccineBought ? Math.floor(wolfBase/2) : wolfBase;
+    ducks = safeDucks(Math.max(0, ducks - loss));
+    lastEventDay = gameDay;
+    showEventPopup('wolf', '🐺', 'Wolf Invasion!', `A pack of wolves raided the flock! Lost ${loss.toLocaleString()} ducks.`);
+  } else {
+    // Disease — flat 10,000 ducks lost
+    const diseaseBase = Math.min(10000, ducks);
+    const loss = duckVaccineBought ? Math.floor(diseaseBase/2) : diseaseBase;
+    ducks = safeDucks(Math.max(0, ducks - loss));
+    lastEventDay = gameDay;
+    showEventPopup('disease', '🦠', 'Disease Outbreak!', `A disease swept through the flock! Lost ${loss.toLocaleString()} ducks.`);
+  }
+  updateUI();
+}
+
+function updateEventTimer() {
+  const now = Date.now();
+  const remaining = Math.max(0, nextEventTime - now);
+  const total = EVENT_INTERVAL;
+  const secs = Math.ceil(remaining / 1000);
+  const mins = Math.floor(secs / 60);
+  const s = secs % 60;
+  const timerEl = document.getElementById('event-timer-val');
+  const fillEl = document.getElementById('event-timer-fill');
+  const pct = (remaining / total) * 100;
+  if (timerEl) {
+    timerEl.textContent = mins + ':' + String(s).padStart(2,'0');
+    timerEl.className = pct > 40 ? 'safe' : '';
+  }
+  if (fillEl) {
+    fillEl.style.width = pct + '%';
+    fillEl.className = pct > 40 ? 'safe' : '';
+  }
+  if (remaining <= 0) {
+    nextEventTime = now + EVENT_INTERVAL;
+    triggerEvent();
+  }
+}
+
+setInterval(updateEventTimer, 1000);
+updateEventTimer();
+
+// ── Day System ────────────────────────────────────────────────────────────────
+const DAY_MS = 24 * 60 * 1000; // 24 minutes = 1 in-game day
+const START_DATE = new Date(2026, 2, 21); // month is 0-indexed, so 2 = March
+
+function getDayLabel(day) {
+  const d = new Date(START_DATE);
+  d.setDate(d.getDate() + day - 1);
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function updateDayDisplay() {
+  const elapsed = Date.now() - dayStartTime;
+  gameDay = 1 + Math.floor(elapsed / DAY_MS);
+  const dayEl = document.getElementById('day-val');
+  const labelEl = dayEl ? dayEl.nextElementSibling : null;
+  if (dayEl) dayEl.textContent = 'Day ' + gameDay;
+  if (labelEl) labelEl.textContent = getDayLabel(gameDay);
+}
+
+setInterval(updateDayDisplay, 1000);
+updateDayDisplay();
+
+// ── Intro ─────────────────────────────────────────────────────────────────────
+document.getElementById('intro-start').addEventListener('click', () => {
+  const overlay = document.getElementById('intro-overlay');
+  overlay.style.transition = 'opacity 0.5s ease';
+  overlay.style.opacity = '0';
+  setTimeout(() => overlay.remove(), 500);
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadGame();
+updateUI();
+</script>
+</body>
+</html>
